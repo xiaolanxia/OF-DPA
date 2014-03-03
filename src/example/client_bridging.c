@@ -418,6 +418,10 @@ int main(int argc, char *argv[])
         rc = OFDPA_E_NOT_FOUND;
       }
     }
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
+    {
+      printf("\r\nNo more entries found.\r\n");
+    }
   }
   else
   {

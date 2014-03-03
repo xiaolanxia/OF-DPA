@@ -868,13 +868,14 @@ static void incrementMac(ofdpaMacAddr_t *mac)
 
 int main(int argc, char *argv[])
 {
-  int               i;
-  int               rc;
-  char              client_name[] = "ofdpa Policy ACL client";
-  char              buf[INET6_ADDRSTRLEN + 1];
-  char              docBuffer[300];
-  char              versionBuf[100];
-  ofdpaFlowEntry_t  flow;
+  int                   i;
+  int                   rc;
+  char                  client_name[] = "ofdpa Policy ACL client";
+  char                  buf[INET6_ADDRSTRLEN + 1];
+  char                  docBuffer[300];
+  char                  versionBuf[100];
+  ofdpaFlowEntry_t      flow;
+  ofdpaFlowEntryStats_t flowStats;
 
   arguments_t arguments =
     {
@@ -1010,51 +1011,71 @@ int main(int argc, char *argv[])
     flow.priority = arguments.flow.priority;
   }
 
-  printf("%s %u Policy ACL flows with the following parameters:\r\n", arguments.delete ? "Deleting" : (arguments.list ? "Listing" : "Adding"), arguments.count);
-  displayAcl(&flow);
-
-  if (!(arguments.list))
+  if (arguments.list || arguments.delete)
   {
-    printf("\r\nDestination MAC address is incremented in each additional ACL.\r\n\r\n");
+    printf("%s up to %u Policy ACL flows.\r\n", arguments.list ? "Listing" : "Deleting", arguments.count);
+  }
+  else
+  {
+      printf("Adding %u Policy ACL flows with the following parameters:\r\n", arguments.count);
+      displayAcl(&flow);
   }
 
-  for (i = 0; i < arguments.count; i++)
+  if (arguments.list || arguments.delete)
   {
-    if (arguments.delete)
-    {
-      rc = ofdpaFlowDelete(&flow);
-    }
-    else if (arguments.list)
+    i = 0;
+	
+    rc = ofdpaFlowStatsGet(&flow, &flowStats);
+    if (rc != OFDPA_E_NONE)
     {
       rc = ofdpaFlowNextGet(&flow, &flow);
-      if (0 == rc)
+    }
+    while (rc == OFDPA_E_NONE)
+    {
+      i++;
+      printf("%slow number %d.\r\n", arguments.delete ? "Deleting f": "F", i);
+      displayAcl(&flow);
+
+      if (arguments.delete)
       {
-        printf("Flow number %d:\n", i);
-        displayAcl(&flow);
+        rc = ofdpaFlowDelete(&flow);
+        if (rc != 0)
+        {
+          printf("\r\nError deleting Policy ACL flow entry rc = %d.\r\n", rc);
+        }
       }
-    }
-    else
-    {
-      rc = ofdpaFlowAdd(&flow);
-    }
-    if (rc != 0)
-    {
-      if ((0 != arguments.list) &&
-          (OFDPA_E_NOT_FOUND == rc))
+      if ((arguments.count == 0) || (i < arguments.count))
       {
-        printf("\r\nNo more entries found.\r\n");
+        rc = ofdpaFlowNextGet(&flow, &flow);
       }
       else
       {
-        printf("\r\nFailed to %s Policy ACL flow entry %u, rc = %d.\r\n", arguments.delete ? "delete" : (arguments.list ? "list" : "add"), i, rc);
+        rc = OFDPA_E_NOT_FOUND;
       }
-      break;
     }
-    if (0 == arguments.list)
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
     {
+      printf("\r\nNo more entries found.\r\n");
+    }
+  }
+  else
+  {
+    printf("\r\nDestination MAC address is incremented in each additional flow.\r\n\r\n");
+
+    for (i = 0; i < arguments.count; i++)
+    {
+      rc = ofdpaFlowAdd(&flow);
+
+      if (rc != 0)
+      {
+        printf("\r\nFailed to add Policy ACL flow entry. rc = %d.\r\n", rc);
+        displayAcl(&flow);
+        break;
+      }
       incrementMac(&flow.flowData.policyAclFlowEntry.match_criteria.destMac);
     }
   }
 
   return rc;
 }
+

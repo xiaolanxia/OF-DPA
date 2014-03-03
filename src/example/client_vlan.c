@@ -177,12 +177,13 @@ static void displayVlan(ofdpaFlowEntry_t *flow)
 
 int main(int argc, char *argv[])
 {
-  int               i;
-  OFDPA_ERROR_t     rc;
-  char              client_name[20] = "ofdpa client";
-  char              docBuffer[300];
-  char              versionBuf[100];
-  ofdpaFlowEntry_t  flow;
+  int                   i;
+  OFDPA_ERROR_t         rc;
+  char                  client_name[20] = "ofdpa client";
+  char                  docBuffer[300];
+  char                  versionBuf[100];
+  ofdpaFlowEntry_t      flow;
+  ofdpaFlowEntryStats_t flowStats;
   arguments_t arguments =
     {
       .count      = DEFAULT_COUNT,
@@ -245,49 +246,71 @@ int main(int argc, char *argv[])
     }
   }
 
-  printf("%s %u VLAN flows with the following parameters:\r\n", arguments.delete ? "Deleting" : (arguments.list ? "Listing" : "Adding"), arguments.count);
-  displayVlan(&flow);
-
-  if ((arguments.list))
-    printf("\r\nVLAN is incremented in each additional flow.\r\n\r\n");
-
-  for (i = 0; i < arguments.count; i++)
+  if (arguments.list || arguments.delete)
   {
-    if (arguments.delete)
-    {
-      rc = ofdpaFlowDelete(&flow);
-    }
-    else if (arguments.list)
+    printf("%s up to %u VLAN flows.\r\n", arguments.list ? "Listing" : "Deleting", arguments.count);
+  }
+  else
+  {
+      printf("Adding %u VLAN flows with the following parameters:\r\n", arguments.count);
+      displayVlan(&flow);
+  }
+
+  if (arguments.list || arguments.delete)
+  {
+    i = 0;
+	
+    rc = ofdpaFlowStatsGet(&flow, &flowStats);
+    if (rc != OFDPA_E_NONE)
     {
       rc = ofdpaFlowNextGet(&flow, &flow);
-      if (0 == rc)
+    }
+    while (rc == OFDPA_E_NONE)
+    {
+      i++;
+      printf("%slow number %d.\r\n", arguments.delete ? "Deleting f": "F", i);
+      displayVlan(&flow);
+
+      if (arguments.delete)
       {
-        printf("Flow number %d:\n", i);
-        displayVlan(&flow);
+        rc = ofdpaFlowDelete(&flow);
+        if (rc != 0)
+        {
+          printf("\r\nError deleting VLAN flow entry rc = %d.\r\n", rc);
+        }
       }
-    }
-    else
-    {
-      rc = ofdpaFlowAdd(&flow);
-    }
-    if (rc != 0)
-    {
-      if ((0 != arguments.list) &&
-          (OFDPA_E_NOT_FOUND == rc))
+      if ((arguments.count == 0) || (i < arguments.count))
       {
-        printf("\r\nNo more entries found.\r\n");
+        rc = ofdpaFlowNextGet(&flow, &flow);
       }
       else
       {
-        printf("\r\nFailed to %s VLAN flow entry %u, rc = %d.\r\n", arguments.delete ? "delete" : (arguments.list ? "list" : "add"), i, rc);
+        rc = OFDPA_E_NOT_FOUND;
       }
-      break;
     }
-    if (0 == arguments.list)
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
     {
+      printf("\r\nNo more entries found.\r\n");
+    }
+  }
+  else
+  {
+    printf("\r\nVLAN is incremented in each additional flow.\r\n\r\n");
+
+    for (i = 0; i < arguments.count; i++)
+    {
+      rc = ofdpaFlowAdd(&flow);
+
+      if (rc != 0)
+      {
+        printf("\r\nFailed to add VLAN flow entry. rc = %d.\r\n", rc);
+        displayVlan(&flow);
+        break;
+      }
       flow.flowData.vlanFlowEntry.match_criteria.vlanId++;
     }
   }
 
   return rc;
 }
+

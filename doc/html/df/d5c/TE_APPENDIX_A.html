@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
-<title>OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual: Appendix A</title>
+<title>OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual: Appendix A - examples of configuration files for Ryu scripts</title>
 <link href="../../tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../../jquery.js"></script>
 <script type="text/javascript" src="../../dynsections.js"></script>
@@ -40,7 +40,7 @@
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">Appendix A </div>  </div>
+<div class="title">Appendix A - examples of configuration files for Ryu scripts </div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Examples of flow/group parameter JSON files.</p>
@@ -77,31 +77,31 @@ Add VLAN</h1>
 Add L2 group</h1>
 <div class="fragment"><div class="line">{</div>
 <div class="line"><span class="stringliteral">&quot;group_mod&quot;</span>:</div>
-<div class="line">      {</div>
-<div class="line">      <span class="stringliteral">&quot;_name&quot;</span> : <span class="stringliteral">&quot;l2_0xb0003&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;_description&quot;</span> :<span class="stringliteral">&quot;Description&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;#comments&quot;</span>: <span class="stringliteral">&quot;Comments&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;cmd&quot;</span> : <span class="stringliteral">&quot;add&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;type&quot;</span> : <span class="stringliteral">&quot;indirect&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;group_id&quot;</span> : <span class="stringliteral">&quot;0xb0003&quot;</span>,</div>
-<div class="line">      <span class="stringliteral">&quot;buckets&quot;</span>:</div>
-<div class="line">        [</div>
 <div class="line">            {</div>
-<div class="line">            <span class="stringliteral">&quot;weight&quot;</span> : <span class="stringliteral">&quot;0&quot;</span>,</div>
-<div class="line">            <span class="stringliteral">&quot;watch_port&quot;</span>:<span class="stringliteral">&quot;any&quot;</span>,</div>
-<div class="line">            <span class="stringliteral">&quot;watch_group&quot;</span>:<span class="stringliteral">&quot;any&quot;</span>,</div>
-<div class="line">            <span class="stringliteral">&quot;actions&quot;</span>:</div>
-<div class="line">            [</div>
-<div class="line">            {</div>
-<div class="line">            <span class="stringliteral">&quot;output&quot;</span>:</div>
-<div class="line">              {</div>
-<div class="line">              <span class="stringliteral">&quot;port&quot;</span>:<span class="stringliteral">&quot;3&quot;</span></div>
-<div class="line">              }</div>
+<div class="line">            <span class="stringliteral">&quot;_name&quot;</span> : <span class="stringliteral">&quot;l2_0xb0003&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;_description&quot;</span> :<span class="stringliteral">&quot;Description&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;#comments&quot;</span>: <span class="stringliteral">&quot;Comments&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;cmd&quot;</span> : <span class="stringliteral">&quot;add&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;type&quot;</span> : <span class="stringliteral">&quot;indirect&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;group_id&quot;</span> : <span class="stringliteral">&quot;0xb0003&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;buckets&quot;</span>:</div>
+<div class="line">                [</div>
+<div class="line">                        {</div>
+<div class="line">                        <span class="stringliteral">&quot;weight&quot;</span> : <span class="stringliteral">&quot;0&quot;</span>,</div>
+<div class="line">                        <span class="stringliteral">&quot;watch_port&quot;</span>:<span class="stringliteral">&quot;any&quot;</span>,</div>
+<div class="line">                        <span class="stringliteral">&quot;watch_group&quot;</span>:<span class="stringliteral">&quot;any&quot;</span>,</div>
+<div class="line">                        <span class="stringliteral">&quot;actions&quot;</span>:</div>
+<div class="line">                        [</div>
+<div class="line">                        {</div>
+<div class="line">                        <span class="stringliteral">&quot;output&quot;</span>:</div>
+<div class="line">                            {</div>
+<div class="line">                            <span class="stringliteral">&quot;port&quot;</span>:<span class="stringliteral">&quot;3&quot;</span></div>
+<div class="line">                            }</div>
+<div class="line">                        }</div>
+<div class="line">                        ]</div>
+<div class="line">                        }</div>
+<div class="line">                ]</div>
 <div class="line">            }</div>
-<div class="line">            ]</div>
-<div class="line">            }</div>
-<div class="line">        ]</div>
-<div class="line">      }</div>
 <div class="line">}</div>
 </div><!-- fragment --><h1><a class="anchor" id="TE_APPENDIX_A_ADD_TERM_MAC"></a>
 Add Termination MAC</h1>
@@ -132,7 +132,7 @@ Add Termination MAC</h1>
 <div class="line">                    }</div>
 <div class="line">                }</div>
 <div class="line">            ]</div>
-<div class="line">    }</div>
+<div class="line">        }</div>
 <div class="line">}</div>
 </div><!-- fragment --><h1><a class="anchor" id="TE_APPENDIX_A_ADD_L3_GROUP"></a>
 Add L3 group</h1>
@@ -321,7 +321,7 @@ Add ACL</h1>
 </div><!-- fragment --> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 21 2014 17:10:13 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Feb 28 2014 15:41:00 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="../../doxygen.png" alt="doxygen"/>
 </a> 1.8.2
 </small></address>

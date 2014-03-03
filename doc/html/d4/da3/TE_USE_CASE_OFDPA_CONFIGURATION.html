@@ -159,76 +159,76 @@ Ryu Configuration</h1>
 <ul>
 <li>Ryu controller (RC) intended to configure OF-DPA switch by Open Flow 1.3 protocol. </li>
 <li>RC working in the passive mode and listen to TCP port 6633. </li>
-<li>To connecting OF-DPA to RC used <b>ofagent</b>. </li>
 <li>To make changes in flow and group tables RC execute configuration script. </li>
-<li>Configuration script <b>ofdpa-te.py</b> get parameters from JSON files – for each flow/group in separate file. </li>
+<li>Configuration script <code> ofdpa-te.py </code> get parameters from JSON files - for each flow/group in separate file. </li>
 <li>Scenario file contain list of parameter files which will be sequentially read and set.</li>
 </ul>
 <h2><a class="anchor" id="TE_USE_CASE_OFDPA_CONFIGURATION_RYU_CONF_SCENARIO_A"></a>
 Scenario A</h2>
-<p><b>cd &lt;ofdpa-te.py directory&gt;</b> <br/>
- Open file <b>conf/ofdpa-te.json</b> <br/>
+<p><code>cd &lt;ofdpa-te.py directory&gt;</code> <br/>
+ Open file <code>conf/ofdpa-te.json</code> <br/>
  Ensure that it contains: </p>
 <div class="fragment"><div class="line">{</div>
-<div class="line">    <span class="stringliteral">&quot;config_directory&quot;</span>:<span class="stringliteral">&quot;conf&quot;</span></div>
-<div class="line">    <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;scenarioA.json&quot;</span></div>
-<div class="line">    <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;scenarioB.json&quot;</span></div>
-<div class="line">    <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;AddACL.json&quot;</span></div>
-<div class="line">    <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;DelACL.json&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;config_directory&quot;</span>:<span class="stringliteral">&quot;conf&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;scenarioA.json&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;scenarioB.json&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;AddACL.json&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;#working_directory&quot;</span>:<span class="stringliteral">&quot;DelACL.json&quot;</span></div>
 <div class="line"></div>
 <div class="line">}</div>
-</div><!-- fragment --><p> Remove leading number sign from string which contains <b>scenarioA.json</b>. <br/>
+</div><!-- fragment --><p> Remove leading hash symbol from string which contains <code>scenarioA.json</code>. <br/>
  Save changes and close file. <br/>
- Open file <b>conf/scenarioA.json</b> <br/>
+ Open file <code>conf/scenarioA.json</code> <br/>
  Ensure that it contains: </p>
 <div class="fragment"><div class="line">{</div>
-<div class="line">    [</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_vlan_1.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_vlan_2.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_vlan_5.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_group_l2_0xb003.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_group_l2_0xb003.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_termination_mac.json&quot;</span></div>
-<div class="line">    <span class="stringliteral">&quot;te_add_group_l3_0x20000001_.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_group_l3_0x20000001.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_ecmp.json&quot;</span>,</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_ucast_routing.json&quot;</span></div>
-<div class="line">    ]</div>
+<div class="line">        [</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_vlan_1.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_vlan_2.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_vlan_5.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_group_l2_0xb003.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_group_l2_0xb003.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_termination_mac.json&quot;</span></div>
+<div class="line">        <span class="stringliteral">&quot;te_add_group_l3_0x20000001_.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_group_l3_0x20000001.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_ecmp.json&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_ucast_routing.json&quot;</span></div>
+<div class="line">        ]</div>
 <div class="line">}</div>
 </div><!-- fragment --><p> Examples of JSON files are located in Appendix A <br/>
  Close file. <br/>
  Run OF-DPA agent: <br/>
- <b>ofagent &ndash;controller=&lt;IP&gt;:6633</b> <br/>
+ <code>ofagentapp --controller=&lt;IP&gt;:6633 [-a 0|1|2|3] &amp; </code> <br/>
+ ( -a is a loglevel) <br/>
  Run RC <br/>
- <b>ryu-manager ofdpa-te.py [&ndash;verbose]</b> <br/>
+ <code>ryu-manager ofdpa-te.py [&ndash;verbose]</code> <br/>
  To stop RC press Ctrl-C</p>
 <h2><a class="anchor" id="TE_USE_CASE_OFDPA_CONFIGURATION_RYU_CONF_SCENARIO_B"></a>
 Scenario B</h2>
-<p>The same as ScenarioA, but in <b>conf/ofdpa-te.json</b> should uncomment line which contains <b>scenarioB.json</b> <br/>
- Content of <b>scenarioB.json</b> the same as <b>scenarioA.json</b> except additional line at the end: <br/>
- <b>te_add_acl.json</b></p>
+<p>The same as ScenarioA, but in <code>conf/ofdpa-te.json</code> should uncomment line which contains <code>scenarioB.json</code> <br/>
+ Content of <code>scenarioB.json</code> the same as <code>scenarioA.json</code> except additional line at the end: <br/>
+ <code>te_add_acl.json</code></p>
 <h2><a class="anchor" id="TE_USE_CASE_OFDPA_CONFIGURATION_RYU_CONF_ADD_ACL"></a>
 Add ACL</h2>
 <p>Performed only one ACL rule adding. <br/>
  This allows to perform scenario B without clean ScenarioA configuration. </p>
 <div class="fragment"><div class="line">{</div>
-<div class="line">[</div>
-<div class="line">    <span class="stringliteral">&quot;te_add_acl.json&quot;</span></div>
-<div class="line">]</div>
+<div class="line">    [</div>
+<div class="line">        <span class="stringliteral">&quot;te_add_acl.json&quot;</span></div>
+<div class="line">    ]</div>
 <div class="line">}</div>
 </div><!-- fragment --><h2><a class="anchor" id="TE_USE_CASE_OFDPA_CONFIGURATION_RYU_CONF_DEL_ACL"></a>
 Del ACL</h2>
 <p>Performed only one ACL rule adding. <br/>
  This allows to return from scenario B configuration. ScenarioA configuration. </p>
 <div class="fragment"><div class="line">{</div>
-<div class="line">[</div>
-<div class="line">    <span class="stringliteral">&quot;te_del_acl.json&quot;</span></div>
-<div class="line">]</div>
+<div class="line">    [</div>
+<div class="line">        <span class="stringliteral">&quot;te_del_acl.json&quot;</span></div>
+<div class="line">    ]</div>
 <div class="line">}</div>
 </div><!-- fragment --> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 21 2014 17:10:13 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Feb 28 2014 15:41:00 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="../../doxygen.png" alt="doxygen"/>
 </a> 1.8.2
 </small></address>

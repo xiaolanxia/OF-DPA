@@ -70,14 +70,14 @@
 <li><b>1 ECMP group with 4 next hops</b> (and the associated L2 Interface, L3 Unicast groups). This leverages ECMP capabilities of the hardware and the Controller is offloaded with this task </li>
 <li><b>1 L3 Routing Table Flow entry</b> to match the IP destination and use the ECMP group as the next hop for the matching traffic.  </li>
 </ul>
-</td><td><b><center>9</center></b>  </td></tr>
+</td><td><b><center>6</center></b>  </td></tr>
 </table>
-<p>As is evident from the above table, it takes <b>9 flow entries with OF-DPA-OF1.3</b> compared to <b>4K entries in an OpenFlow 1.0</b> scenario.</p>
+<p>As is evident from the above table, it takes <b>6 flow entries with OF-DPA-OF1.3</b> compared to <b>4K entries in an OpenFlow 1.0</b> scenario.</p>
 <p>As a step further, consider a scenario where the ECMP hashing leads to an uneven load distribution. This would result in few of the ECMP next hop egress ports getting congested while the rest are underutilized. The ACL Policy Flow table comes to the rescue which can be used to <b>engineer and redirect</b> the identified ingress traffic to underutilized egress ports. A flow entry for each of these elephant flows would need to be installed in the ACL Policy Flow table. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 21 2014 17:10:13 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Feb 28 2014 15:41:00 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="../../doxygen.png" alt="doxygen"/>
 </a> 1.8.2
 </small></address>

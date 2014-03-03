@@ -332,6 +332,7 @@ int main(int argc, char *argv[])
   char client_name[] = "ofdpa termination MAC client";
   char docBuffer[300];
   ofdpaFlowEntry_t flow;
+  ofdpaFlowEntryStats_t  flowStats;
   arguments_t arguments =
     {
       .count                    = DEFAULT_COUNT,
@@ -421,55 +422,71 @@ int main(int argc, char *argv[])
     memcpy(&flow.flowData.terminationMacFlowEntry.match_criteria, &arguments.termMacMatch, sizeof(flow.flowData.terminationMacFlowEntry.match_criteria));
   }
 
-  printf("%s %u termination MAC flows with the following parameters:\r\n", arguments.delete ? "Deleting" : (arguments.list ? "Listing" : "Adding"), arguments.count);
-  displayTermMac(&flow);
-
-  if (!(arguments.list))
-    printf("\r\nDestination MAC address is incremented in each additional ACL.\r\n\r\n");
-
-  i = 0;
-  do
+  if (arguments.list || arguments.delete)
   {
-    if (arguments.delete)
-    {
-      rc = ofdpaFlowDelete(&flow);
-    }
-    else if (arguments.list)
+    printf("%s up to %u termination MAC flows.\r\n", arguments.list ? "Listing" : "Deleting", arguments.count);
+  }
+  else
+  {
+      printf("Adding %u termination MAC flows with the following parameters:\r\n", arguments.count);
+      displayTermMac(&flow);
+  }
+
+  if (arguments.list || arguments.delete)
+  {
+    i = 0;
+	
+    rc = ofdpaFlowStatsGet(&flow, &flowStats);
+    if (rc != OFDPA_E_NONE)
     {
       rc = ofdpaFlowNextGet(&flow, &flow);
-      if (0 == rc)
+    }
+    while (rc == OFDPA_E_NONE)
+    {
+      i++;
+      printf("%slow number %d.\r\n", arguments.delete ? "Deleting f": "F", i);
+      displayTermMac(&flow);
+
+      if (arguments.delete)
       {
-        printf("Flow number %d:\n", i);
-        displayTermMac(&flow);
+        rc = ofdpaFlowDelete(&flow);
+        if (rc != 0)
+        {
+          printf("\r\nError deleting termination MAC flow entry rc = %d.\r\n", rc);
+        }
       }
-    }
-    else
-    {
-      rc = ofdpaFlowAdd(&flow);
-    }
-    if (rc != 0)
-    {
-      if ((0 != arguments.list) &&
-          (OFDPA_E_NOT_FOUND == rc))
+      if ((arguments.count == 0) || (i < arguments.count))
       {
-        printf("\r\nNo more entries found.\r\n");
+        rc = ofdpaFlowNextGet(&flow, &flow);
       }
       else
       {
-        printf("\r\nFailed to %s termination MAC flow entry %u, rc = %d.\r\n", arguments.delete ? "delete" : (arguments.list ? "list" : "add"), i, rc);
+        rc = OFDPA_E_NOT_FOUND;
       }
-      break;
     }
-    i++;
-    if (i < arguments.count)
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
     {
+      printf("\r\nNo more entries found.\r\n");
+    }
+  }
+  else
+  {
+    printf("\r\nDestination MAC address is incremented in each additional flow.\r\n\r\n");
+
+    for (i = 0; i < arguments.count; i++)
+    {
+      rc = ofdpaFlowAdd(&flow);
+
+      if (rc != 0)
+      {
+        printf("\r\nFailed to add termination MAC flow entry. rc = %d.\r\n", rc);
+        displayTermMac(&flow);
+        break;
+      }
       incrementMac(&flow.flowData.terminationMacFlowEntry.match_criteria.destMac);
     }
-    else
-    {
-      break;
-    }
-  } while (1);
+  }
 
   return rc;
 }
+

@@ -469,12 +469,13 @@ static void incrementDestIpv6(struct in6_addr *Ip6Addr)
 
 int main(int argc, char *argv[])
 {
-  int               i;
-  int               rc;
-  char              client_name[] = "ofdpa Routing client";
-  char              docBuffer[300];
-  char              versionBuf[100];
-  ofdpaFlowEntry_t  flow;
+  int                   i;
+  int                   rc;
+  char                  client_name[] = "ofdpa Routing client";
+  char                  docBuffer[300];
+  char                  versionBuf[100];
+  ofdpaFlowEntry_t      flow;
+  ofdpaFlowEntryStats_t flowStats;
 
   arguments_t arguments;
 
@@ -586,46 +587,61 @@ int main(int argc, char *argv[])
              arguments.delete ? "Deleting" : "Adding",
              arguments.count, (OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING == flow.tableId) ? "Unicast" : "Multicast");
       displayFlow(&flow);
-      printf("\r\nDestination IP address is incremented in each additional flow.\r\n\r\n");
   }
 
-  for (i = 0; i < arguments.count; i++)
+  if (arguments.list || arguments.delete)
   {
-    if (arguments.delete)
-    {
-      rc = ofdpaFlowDelete(&flow);
-    }
-    else if (arguments.list)
+    i = 0;
+	
+    rc = ofdpaFlowStatsGet(&flow, &flowStats);
+    if (rc != OFDPA_E_NONE)
     {
       rc = ofdpaFlowNextGet(&flow, &flow);
-      if (0 == rc)
+    }
+    while (rc == OFDPA_E_NONE)
+    {
+      i++;
+      printf("%slow number %d.\r\n", arguments.delete ? "Deleting f": "F", i);
+      displayFlow(&flow);
+
+      if (arguments.delete)
       {
-        printf("Flow number %d:\n", i);
-        displayFlow(&flow);
+        rc = ofdpaFlowDelete(&flow);
+        if (rc != 0)
+        {
+          printf("\r\nError deleting %s Routing flow entry rc = %d.\r\n", 
+                 (OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING == flow.tableId) ? "Unicast" : "Multicast", rc);
+        }
       }
-    }
-    else
-    {
-      rc = ofdpaFlowAdd(&flow);
-    }
-    if (rc != 0)
-    {
-      if ((0 != arguments.list) &&
-          (OFDPA_E_NOT_FOUND == rc))
+      if ((arguments.count == 0) || (i < arguments.count))
       {
-        printf("\r\nNo more entries found.\r\n");
+        rc = ofdpaFlowNextGet(&flow, &flow);
       }
       else
       {
-        printf("\r\nFailed to %s %s Routing flow entry %u, rc = %d.\r\n",
-               arguments.delete ? "delete" : (arguments.list ? "list" : "add"),
-               (OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING == flow.tableId) ? "Unicast" : "Multicast",
-               i, rc);
+        rc = OFDPA_E_NOT_FOUND;
       }
-      break;
     }
-    if (0 == arguments.list)
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
     {
+      printf("\r\nNo more entries found.\r\n");
+    }
+  }
+  else
+  {
+    printf("\r\nDestination IP address is incremented in each additional flow.\r\n\r\n");
+
+    for (i = 0; i < arguments.count; i++)
+    {
+      rc = ofdpaFlowAdd(&flow);
+
+      if (rc != 0)
+      {
+        printf("\r\nFailed to add %s Routing flow entry rc = %d.\r\n", 
+               (OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING == flow.tableId) ? "Unicast" : "Multicast", rc);
+        displayFlow(&flow);
+        break;
+      }
       if (flow.tableId == OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING)
       {
         if (ETHERTYPE_IP == arguments.etherType)
@@ -657,3 +673,4 @@ int main(int argc, char *argv[])
 
   return rc;
 }
+

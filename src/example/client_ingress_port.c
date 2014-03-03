@@ -182,13 +182,20 @@ int main(int argc, char *argv[])
   }
   flow.flowData.ingressPortFlowEntry.match_criteria.inPortMask = OFDPA_INPORT_TYPE_MASK;
 
-  printf("%s %u Ingress Port flows with the following parameters:\r\n", arguments.delete ? "Deleting" : (arguments.list ? "Listing" : "Adding"), arguments.count);
-  displayIngressPort(&flow);
+  if (arguments.list || arguments.delete)
+  {
+    printf("%s up to %u ingress port flows.\r\n", arguments.list ? "Listing" : "Deleting", arguments.count);
+  }
+  else
+  {
+      printf("Adding %u ingress port flows with the following parameters:\r\n", arguments.count);
+      displayIngressPort(&flow);
+  }
 
   if (arguments.list || arguments.delete)
   {
     i = 0;
-
+	
     rc = ofdpaFlowStatsGet(&flow, &flowStats);
     if (rc != OFDPA_E_NONE)
     {
@@ -197,18 +204,15 @@ int main(int argc, char *argv[])
     while (rc == OFDPA_E_NONE)
     {
       i++;
-      if (arguments.list)
-      {
-        printf("Flow number %d.\r\n", i);
-        displayIngressPort(&flow);
-      }
-      else if (arguments.delete)
+      printf("%slow number %d.\r\n", arguments.delete ? "Deleting f": "F", i);
+      displayIngressPort(&flow);
+
+      if (arguments.delete)
       {
         rc = ofdpaFlowDelete(&flow);
         if (rc != 0)
         {
           printf("\r\nError deleting ingress port flow entry rc = %d.\r\n", rc);
-          displayIngressPort(&flow);
         }
       }
       if ((arguments.count == 0) || (i < arguments.count))
@@ -219,6 +223,10 @@ int main(int argc, char *argv[])
       {
         rc = OFDPA_E_NOT_FOUND;
       }
+    }
+    if ((1 == arguments.list) && (OFDPA_E_NOT_FOUND == rc) && (i < arguments.count))
+    {
+      printf("\r\nNo more entries found.\r\n");
     }
   }
   else
@@ -238,3 +246,4 @@ int main(int argc, char *argv[])
 
   return rc;
 }
+
