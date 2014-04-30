@@ -242,7 +242,9 @@ client_group                      -> Covered by Apache 2.0
 client_ingress_port               -> Covered by Apache 2.0
 client_pkt_txrx                   -> Covered by Apache 2.0
 client_port                       -> Covered by Apache 2.0
-ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+ofagentapp                        -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+boardkeeper_1.0_amd64.deb         -> Contains two sets of binaries: (i) Kernel Modules licensed under GPLv2, and (ii) User Space applications licensed under LGPL
+
 
 bin/ly2-trident-brl20/ - Quanta T3048-LY2 Ethernet Switch
 

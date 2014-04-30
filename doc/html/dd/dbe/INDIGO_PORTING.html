@@ -39,7 +39,7 @@
 <div class="title">INDIGO OF-DPA Integration </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>The following sections give a brief overview of the steps involved in integrating Indigo with OF-DPA.</p>
+<div class="textblock"><p>The following sections give a brief overview of the steps involved in integrating Indigo Openflow agent with OF-DPA.</p>
 <h1><a class="anchor" id="CODE_ORGANIZATION"></a>
 Indigo Code Organization</h1>
 <p>The Indigo agent code is organized into modules and submodules subdirectories. The modules comprise of the core architecture while code from other repositories are organized into submodules.</p>
@@ -48,13 +48,13 @@ Architectural Overview</h1>
 <p>The architecture is divided into two sets of modules, platform independent modules and platform dependent modules. The implementation for platform independent modules is available in the Indigo repository. These include the Socket Manager, Connection Manager, State Manager and Configuration. The platform specific modules are not included in the Indigo distribution. These are the Forwarding and the Port Manager modules.</p>
 <h1><a class="anchor" id="PLATFORM_MODULES"></a>
 Platform Specific Modules</h1>
-<p>Implementing Platform specific modules form an integral part of integrating the Indigo agent on a platform. These are implemented as indigo-ofdpa driver located in the folder openflow/ofdpa/ofagent/ofdpadriver</p>
+<p>Implementing Platform specific modules form an integral part of integrating the Indigo agent on a platform. These are implemented as indigo-ofdpa driver located in the folder openflow/ofdpa/ofagent/ofdpadriver. Changes done in the Indigo code are flagged with the macro OFDPA_FIXUP.</p>
 <h2><a class="anchor" id="FORWARDING_MODULE"></a>
 Forwarding Module</h2>
 <p>This module exposes interfaces that integrate with the platforms forwarding engine. The forwarding APIs are declared in the header file indigo/modules/indigo/module/inc/indigo/forwarding.h</p>
 <p>The following APIs are implemented</p>
 <ul>
-<li>indigo_fwd_forwarding_features_get(): Fills out the feature reply message with number of OpenFlow tables supported capabilities supported.</li>
+<li>indigo_fwd_forwarding_features_get(): Fills out the feature reply message with number of OpenFlow tables and capabilities supported.</li>
 </ul>
 <ul>
 <li>indigo_fwd_flow_create(): Creates a flow entry.</li>
@@ -84,7 +84,7 @@ Forwarding Module</h2>
 <li>indigo_fwd_group_delete(): Deletes a group entry.</li>
 </ul>
 <ul>
-<li>indigo_fwd_group_stats_get(): Gets group stats.</li>
+<li>indigo_fwd_group_stats_get(): Gets group statistics.</li>
 </ul>
 <h2><a class="anchor" id="PORT_MODULE"></a>
 Port Module</h2>
@@ -110,7 +110,7 @@ Port Module</h2>
 </ul>
 <h2><a class="anchor" id="ASYNCHRONOUS_MESSAGES"></a>
 Asynchronous Messages</h2>
-<p>The following functions are implemented to add support for asynchronous messages sent by Indigo to the Controller</p>
+<p>The following functions are implemented to add support for asynchronous messages sent by OF-DPA to the Controller</p>
 <ul>
 <li>ind_ofdpa_flow_event_receive(): Handles flow events. These are hard and idle timeout flow ageing events. It invokes ind_core_flow_expiry_handler() which is a new function added in Indigo as part of ofdpa integration. This function invokes core indigo functions to delete the expired flow from ofdpa and the indigo database and sends a flow removed message to the Controller.</li>
 </ul>
@@ -123,7 +123,9 @@ Asynchronous Messages</h2>
 <h1><a class="anchor" id="INDIGO_INITIALIZATION"></a>
 Indigo initialization</h1>
 <p>The Indigo agent initialization code is implemented in the file openflow/ofdpa/ofagent/application/ofagent.c. This file primarily implements the following:</p>
-<p>Sets the debug levels of core Indigo and ofdpa as passed through the command line arguments.</p>
+<ul>
+<li>Sets the debug levels of core Indigo and ofdpa as passed through the command line arguments.</li>
+</ul>
 <ul>
 <li>Initializes logging for the indigo-ofdpa driver and the core Indigo modules.</li>
 </ul>
@@ -144,6 +146,51 @@ Indigo initialization</h1>
 </ul>
 <ul>
 <li>Runs the main Indigo socket poll loop. This loop polls on the registered sockets and handles socket events and timers for the Indigo agent.</li>
+</ul>
+<h1><a class="anchor" id="OFDPA_CHANGES"></a>
+OF-DPA changes in Indigo</h1>
+<p>Changes have been made in the following Indigo files for OF-DPA:</p>
+<ul>
+<li>indigo/modules/OFStateManager/module/inc/OFStateManager/ofstatemanager.h </li>
+<li>indigo/modules/OFStateManager/module/src/ofstatemanager.c.<ul>
+<li>ind_core_flow_expiry_handler(): This new function is added to handle flow expiry in the datapath.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>indigo/modules/OFStateManager/module/src/group_handlers.c<ul>
+<li>Changes are made to add return codes for functions handling Group deletes.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>indigo/modules/OFStateManager/module/src/handlers.c<ul>
+<li>ind_core_queue_get_config_request_handler(): Changes are made to send appropriate error type and code in the reply messages to Controller. Changes are also made to port queue configuration error logs.</li>
+<li>ind_core_queue_stats_request_handler(): Changes are made to send appropriate error code to Controller.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>indigo/modules/indigo/module/inc/indigo/forwarding.h<ul>
+<li>A return code is added to indigo_fwd_group_delete().</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>indigo/modules/loci/inc/loci/loci.h </li>
+<li>indigo/modules/loci/inc/loci/loci_base.h </li>
+<li>indigo/modules/loci/inc/loci/loci_show.h </li>
+<li>indigo/modules/loci/inc/loci/of_doc.h </li>
+<li>indigo/modules/loci/inc/loci/of_match.h </li>
+<li>indigo/modules/loci/src/loci.c </li>
+<li>indigo/modules/loci/src/loci_obj_dump.c </li>
+<li>indigo/modules/loci/src/loci_obj_show.c </li>
+<li>indigo/modules/loci/src/of_match.c </li>
+<li>indigo/modules/loci/src/of_type_data.c </li>
+<li>indigo/modules/locitest/src/test_common.c<ul>
+<li>Changes are made to support TunnelId match field.</li>
+</ul>
+</li>
 </ul>
 <h1><a class="anchor" id="INDIGO_BUILDS"></a>
 Compiling Indigo</h1>
@@ -220,7 +267,7 @@ Single Process Mode</h2>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 28 2014 15:41:00 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 22 2014 17:34:37 for OpenFlow Data Plane Abstraction (OF-DPA) API Guide and Reference Manual by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="../../doxygen.png" alt="doxygen"/>
 </a> 1.8.2
 </small></address>

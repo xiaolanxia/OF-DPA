@@ -1,0 +1,101 @@
+       How to Install OF-DPA Binary
+       ----------------------------
+
+This document describes how to install the OF-DPA software provided in
+this package on the Interface Masters Niagra 2948-6XL switch.
+
+Note: Files should be downloaded using scp or sftp.
+
+Download and install the boardkeeper package
+============================================
+
+* download boardkeeper_1.0_amd64.deb
+
+* install using command "dpkg -i boardkeeper_1.0_amd64.deb"
+
+* reboot the switch (e.g., "shutdown -r now")
+
+Downloading and running OF-DPA
+==============================
+
+* cd to target directory.
+
+* Download the SDK kernel modules and configuration files on the switch:
+  linux-kernel-bde.ko
+  linux-user-bde.ko
+
+* Download the OFDPA executables on the switch:
+  ofdpa
+  ofagentapp
+
+* Ensure the executables are actually executable
+  chmod 755 ofdpa
+  chmod 755 ofagentapp
+
+* Download the RPC shared libaray:
+  librpc_client.so.1
+
+* Install the RPC shared library. The destination directory to install
+  the RPC shared library depends on the host environment.  Install the
+  shared library in a location included in the system's library search
+  path.
+
+  # mv librpc_client.so.1 /usr/lib
+  # cd /usr/lib
+  # ln -sf librpc_client.so.1 librpc_client.so
+
+* The switch is now ready to run one of the executables. Either the
+  ofdpa or the ofagentapp program can be run. "cd" to the target
+  directory and start either executable as a background process:
+
+  #./ofdpa &
+
+Or
+
+  #./ofagentapp --controller=IP:PORT &
+
+
+Downloading and running example Client Applications
+===================================================
+* Change to the target directory and download the following applications:
+  client_acl
+  client_bridging
+  client_cfg_purge
+  client_debugcomp
+  client_debuglvl
+  client_drivshell
+  client_event
+  client_flowtable_dump
+  client_group
+  client_ingress_port
+  client_pkt_txrx
+  client_port
+  client_routing
+  client_srcmac_learn
+  client_termmac
+  client_tunnel_ecmp_nexthop
+  client_tunnel_ecmp_nexthop_member
+  client_tunnel_nexthop
+  client_tunnel_port
+  client_tunnel_port_tenant
+  client_tunnel_tenant
+  client_vlan
+
+* Ensure the applications are actually executable
+  chmod 755 client_*
+
+* All the client programs can be started from the linux shell as any standard
+  linux application. Use '--help' option to display supported options.
+
+Building Client Applications
+============================
+
+Source code for OF-DPA client applications may be built on the switch using standard
+GNU development tools. The client applications are dynamically linked with the OF-DPA
+shared library. Commands to compile and link one of the example client applications.
+are shown below. Substitute the appropriate file names to build other client applications.
+
+ # ! Compile step
+ # gcc -c -o client_acl.o -I../include client_acl.c
+ # ! Link step
+ # gcc -o client_acl -Wl,-Bstatic client_acl.o -Wl,-Bdynamic -lc -lrpc_client

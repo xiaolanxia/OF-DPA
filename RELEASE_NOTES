@@ -1,0 +1,29 @@
+OF-DPA 1.0 Release Notes
+========================
+
+Following are the known issues in this release:
+
+FP-192796
+On modifiying the physical port number in tunnel next hop flow, packets other than the expected ones are also received on VTEP.
+
+FP-192368
+Tunnelled traffic with incrementing source mac does not hash between the next hops of an ECMP next hop group. 
+
+FP-185121
+VXLAN encapsulated packets do not egress with new destination multicast address after modification of the tunnel next-hop.
+
+FP-185080
+A DLF Tenant Bridging flow is a no-op since forwarding happens right after configuring the tenant tunnel and the overlay group. The bridging flow is not required.
+
+FP-184285
+Traffic is not distributed according to the configured min and max rates to the queues on an egress port.
+
+FP-184170
+Received packets counter is not incrementing if the received packet frame size is > 64 bytes.
+
+FP-183886
+Get and clear port queue stats fails on TD+.
+
+FP-183818
+Able to configure invalid values for port advertising feature.
+

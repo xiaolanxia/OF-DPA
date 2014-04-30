@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
   }
 
   /* retrieve all port events to allow logical ports to actually be deleted from database */
+  printf("Retrieving pending logical port delete events.\n");
   memset(&portEventData, 0, sizeof(portEventData));
   count = 0;
   while (ofdpaPortEventNextGet(&portEventData) == OFDPA_E_NONE)
@@ -275,6 +276,10 @@ int main(int argc, char *argv[])
   if (count != 0)
   {
     printf("\tRetrieved %d port delete events.\n", count);
+  }
+  else
+  {
+    printf("\tNo events found\n");
   }
 
   return(0);

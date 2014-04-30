@@ -85,38 +85,38 @@
 #define ARG_DELETE        "delete"
 #define ARG_LIST          "list"
 
-#define KEY_COUNT          1
-#define KEY_INTF           2
-#define KEY_VLANID         3
-#define KEY_VLANPRI        4
-#define KEY_ETHERTYPE      5
-#define KEY_SRCMAC         6
-#define KEY_DESTMAC        7
-#define KEY_DESTIP4        8
-#define KEY_PROTOCOL       9
-#define KEY_SOURCEIP4     10
-#define KEY_SOURCEIP6     11
-#define KEY_DESTIP6       12
-#define KEY_DSCP          13
-#define KEY_SRCPORT       14
-#define KEY_DSTPORT       15
-#define KEY_PRIORITY      16
-#define KEY_SETGROUP      17
-#define KEY_SETQUEUE      18
-#define KEY_SETVLANPRI    19
-#define KEY_SETDSCP       20
-#define KEY_DISCARD       21
-#define KEY_COPY          22
-#define KEY_ICMPTYPE      23
-#define KEY_ICMPCODE      24
-#define KEY_SRCIP4PREFIX  25
-#define KEY_DESTIP4PREFIX 26
-#define KEY_SRCIP6PREFIX  27
-#define KEY_DESTIP6PREFIX 28
-#define KEY_SRCMACMASK    30
-#define KEY_DESTMACMASK   31
-#define KEY_TUNNELID      32
-#define KEY_OUTPUT_TUNNEL_PORT 33
+#define KEY_COUNT               1000
+#define KEY_INTF                1001
+#define KEY_VLANID              1002
+#define KEY_VLANPRI             1003
+#define KEY_ETHERTYPE           1004
+#define KEY_SRCMAC              1005
+#define KEY_DESTMAC             1006
+#define KEY_DESTIP4             1007
+#define KEY_PROTOCOL            1008
+#define KEY_SOURCEIP4           1009
+#define KEY_SOURCEIP6           1010
+#define KEY_DESTIP6             1011
+#define KEY_DSCP                1012
+#define KEY_SRCPORT             1013
+#define KEY_DSTPORT             1014
+#define KEY_PRIORITY            1015
+#define KEY_SETGROUP            1016
+#define KEY_SETQUEUE            1017
+#define KEY_SETVLANPRI          1018
+#define KEY_SETDSCP             1019
+#define KEY_DISCARD             1020
+#define KEY_COPY                1021
+#define KEY_ICMPTYPE            1022
+#define KEY_ICMPCODE            1023
+#define KEY_SRCIP4PREFIX        1024
+#define KEY_DESTIP4PREFIX       1025
+#define KEY_SRCIP6PREFIX        1026
+#define KEY_DESTIP6PREFIX       1027
+#define KEY_SRCMACMASK          1028
+#define KEY_DESTMACMASK         1029
+#define KEY_TUNNELID            1030
+#define KEY_OUTPUT_TUNNEL_PORT  1031
 
 typedef struct
 {
@@ -1024,7 +1024,7 @@ int main(int argc, char *argv[])
   if (arguments.list || arguments.delete)
   {
     i = 0;
-	
+        
     rc = ofdpaFlowStatsGet(&flow, &flowStats);
     if (rc != OFDPA_E_NONE)
     {
