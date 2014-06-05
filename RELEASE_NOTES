@@ -27,3 +27,8 @@ Get and clear port queue stats fails on TD+.
 FP-183818
 Able to configure invalid values for port advertising feature.
 
+FP-204333
+This is a documentation issue. Due to operation of the switching silicon, entries in the Termination MAC flow table are constrained such that multiple entries 
+matching on the same data for IN_PORT, ETH_DST, and VLAN_VID and different data for ETH_TYPE must specify the same values for  Priority and specify the same 
+Action for Goto-table (i.e. using next table of 0 to indicate the matching packets should be dropped) and Output CONTROLLER (i.e. copy to CPU). This behavior 
+will be documented in the programmers' guidance for future releases. This behavior happens on all supported platforms.
