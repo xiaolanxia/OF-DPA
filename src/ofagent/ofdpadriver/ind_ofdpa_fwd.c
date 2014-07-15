@@ -1352,6 +1352,7 @@ static indigo_error_t ind_ofdpa_packet_out_actions_get(of_list_action_t *of_list
             packetOutActions->outputPort = port_no;
             break;
         }
+        break;
       }
       default:
         LOG_ERROR("Unsupported action for packet out: %s", of_object_id_str[act.header.object_id]);
