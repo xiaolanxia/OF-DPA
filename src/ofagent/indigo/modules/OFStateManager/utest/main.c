@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -32,6 +32,7 @@
 #include <indigo/of_connection_manager.h>
 #include <indigo/of_state_manager.h>
 #include <indigo/forwarding.h>
+#include <indigo/port_manager.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,6 +45,12 @@
 #include <locitest/test_common.h>
 
 #include "ofstatemanager_decs.h"
+
+/* Defined in gentable_test.c */
+int test_gentable(void);
+
+/* Defined in table_test.c */
+int test_table(void);
 
 /* Must be an even number */
 #define TEST_FLOW_COUNT 1000
@@ -72,6 +79,12 @@
 #define TEST_ENT_ID 17
 #define TEST_ETH_TYPE(idx) ((idx) + 1)
 #define TEST_KEY(idx) (2 * ((idx) + 1))
+
+/*
+ * Track messages in flight like OFConnectionManager does, for barriers
+ */
+static int outstanding_op_cnt;
+static void message_deleted(of_object_t *obj);
 
 /****************************************************************
  * Stubs
@@ -117,7 +130,7 @@ indigo_fwd_flow_delete(indigo_cookie_t flow_id,
                        indigo_fi_flow_stats_t *flow_stats)
 {
     AIM_LOG_VERBOSE("flow delete called\n");
-    memset(flow_stats, 0, sizeof(flow_stats));
+    memset(flow_stats, 0, sizeof(*flow_stats));
     return INDIGO_ERROR_NONE;
 }
 
@@ -127,6 +140,15 @@ indigo_error_t indigo_fwd_flow_stats_get(
 {
     AIM_LOG_VERBOSE("flow stats get called\n");
     memset(flow_stats, 0, sizeof(*flow_stats));
+    return INDIGO_ERROR_NONE;
+}
+
+indigo_error_t
+indigo_fwd_flow_hit_status_get(indigo_cookie_t flow_id,
+                               bool *is_hit)
+{
+    AIM_LOG_VERBOSE("flow hit status get called\n");
+    *is_hit = 0;
     return INDIGO_ERROR_NONE;
 }
 
@@ -159,22 +181,40 @@ ind_cxn_reset(indigo_cxn_id_t cxn_id)
     return;
 }
 
-int
-indigo_cxn_send_error_msg(of_version_t version, indigo_cxn_id_t cxn_id,
-                          uint32_t xid, uint16_t type, uint16_t code,
-                          of_octets_t *octets)
+void
+indigo_cxn_send_error_reply(indigo_cxn_id_t cxn_id, of_object_t *orig,
+                            uint16_t type, uint16_t code)
 {
     AIM_LOG_VERBOSE("Send error msg called for cxn id %d\n",
                       cxn_id);
-    return INDIGO_ERROR_NONE;
 }
 
-indigo_error_t
+static int controller_message_counters[OF_MESSAGE_OBJECT_COUNT];
+
+void
 indigo_cxn_send_controller_message(indigo_cxn_id_t cxn_id, of_object_t *obj)
 {
     AIM_LOG_VERBOSE("Send msg called for cxn id %d, obj type %d\n",
                       cxn_id, obj->object_id);
+    controller_message_counters[obj->object_id]++;
     of_object_delete(obj);
+}
+
+static int async_message_counters[OF_MESSAGE_OBJECT_COUNT];
+
+void
+indigo_cxn_send_async_message(of_object_t *obj)
+{
+    AIM_LOG_VERBOSE("Send async msg called for type %s",
+                    of_object_id_str[obj->object_id]);
+    async_message_counters[obj->object_id]++;
+    of_object_delete(obj);
+}
+
+indigo_error_t
+indigo_cxn_get_async_version(of_version_t *ver)
+{
+    *ver = OF_VERSION_1_0;
     return INDIGO_ERROR_NONE;
 }
 
@@ -183,6 +223,10 @@ ind_cxn_message_track_setup(indigo_cxn_id_t cxn_id, of_object_t *obj)
 {
     AIM_LOG_VERBOSE("Cxn message track cxn id %d, obj type %d\n",
                          cxn_id, obj->object_id);
+    assert(outstanding_op_cnt >= 0);
+    outstanding_op_cnt++;
+    obj->track_info.delete_cb = message_deleted;
+    obj->track_info.delete_cookie = NULL;
     return INDIGO_ERROR_NONE;
 }
 
@@ -238,6 +282,17 @@ indigo_fwd_experimenter(of_experimenter_t *experimenter,
     return INDIGO_ERROR_NONE;
 }
 
+indigo_error_t
+indigo_port_interface_list(indigo_port_info_t **list)
+{
+    *list = NULL;
+    return INDIGO_ERROR_NONE;
+}
+
+void
+indigo_port_interface_list_destroy(indigo_port_info_t *list)
+{
+}
 
 /**
  * Notify forwarding of changes in expiration processing behavior
@@ -283,7 +338,26 @@ indigo_fwd_group_stats_get(uint32_t id, of_group_stats_entry_t *entry)
 {
 }
 
+void
+indigo_fwd_pipeline_get(of_desc_str_t pipeline)
+{
+    AIM_LOG_VERBOSE("fwd switch pipeline get");
+    strcpy(pipeline, "some_pipeline");
+}
 
+indigo_error_t
+indigo_fwd_pipeline_set(of_desc_str_t pipeline)
+{
+    AIM_LOG_VERBOSE("fwd switch pipeline set: %s", pipeline);
+    return INDIGO_ERROR_NONE;
+}
+
+void
+indigo_fwd_pipeline_stats_get(of_desc_str_t **pipeline, int *num_pipelines)
+{
+    AIM_LOG_VERBOSE("fwd switch pipeline stats get");
+    *num_pipelines = 0;
+}
 
 static int
 check_table_entry_states(ft_instance_t ft)
@@ -352,7 +426,7 @@ depopulate_table(ft_instance_t ft)
         entry = ft_lookup(ft, TEST_KEY(idx));
         TEST_ASSERT(entry != NULL);
         TEST_ASSERT(entry->match.fields.eth_type == TEST_ETH_TYPE(idx));
-        ft_delete_id(ft, TEST_KEY(idx));
+        ft_delete(ft, entry);
         TEST_ASSERT(check_table_entry_states(ft) == 0);
     }
 
@@ -389,11 +463,6 @@ check_bucket_counts(ft_instance_t ft, int expected)
     return 0;
 }
 
-/*
- * Track messages in flight like OFConnectionManager does, for barriers
- */
-static int outstanding_op_cnt;
-
 static void
 message_deleted(of_object_t *obj)
 {
@@ -401,17 +470,14 @@ message_deleted(of_object_t *obj)
     outstanding_op_cnt--;
 }
 
-static int
+void
 handle_message(of_object_t *obj)
 {
-    assert(outstanding_op_cnt >= 0);
-    outstanding_op_cnt++;
-    obj->track_info.delete_cb = message_deleted;
-    obj->track_info.delete_cookie = NULL;
-    return indigo_core_receive_controller_message(0, obj);
+    indigo_core_receive_controller_message(0, obj);
+    of_object_delete(obj);
 }
 
-static int
+int
 do_barrier(void)
 {
     int count = 0;
@@ -517,8 +583,8 @@ test_ft_hash(void)
     entry = ft_lookup(ft, TEST_ENT_ID);
 
     /* Should not find next id */
-    entry = ft_lookup(ft, TEST_ENT_ID + 1);
-    TEST_ASSERT(entry == NULL);
+    lookup_entry = ft_lookup(ft, TEST_ENT_ID + 1);
+    TEST_ASSERT(lookup_entry == NULL);
 
     /* Set up the query structure */
     INDIGO_MEM_SET(&query, 0, sizeof(query));
@@ -599,7 +665,7 @@ test_ft_hash(void)
     TEST_INDIGO_OK(first_match(ft, &query, &lookup_entry));
     TEST_ASSERT(lookup_entry->id == TEST_ENT_ID);
 
-    ft_delete_id(ft, TEST_ENT_ID);
+    ft_delete(ft, entry);
     of_object_delete(flow_add);
 
     /* Delete the table */
@@ -843,7 +909,7 @@ iter_task_cb(void *cookie, ft_entry_t *entry)
     if (entry != NULL) {
         state->finished = 0;
         state->entries_seen++;
-        ASSERT(ft_delete(state->ft, entry) == 0);
+        ft_delete(state->ft, entry);
     } else {
         state->finished = 1;
     }
@@ -899,7 +965,8 @@ test_hello(void)
     of_hello_t *hello;
 
     hello = of_hello_new(OF_VERSION_1_0);
-    TEST_INDIGO_OK(indigo_core_receive_controller_message(0, hello));
+    indigo_core_receive_controller_message(0, hello);
+    of_object_delete(hello);
 
     return TEST_PASS;
 }
@@ -911,7 +978,8 @@ test_packet_out(void)
 
     pkt_out = of_packet_out_new(OF_VERSION_1_0);
     /* Could add params, but core doesn't do anything with them */
-    TEST_INDIGO_OK(indigo_core_receive_controller_message(0, pkt_out));
+    indigo_core_receive_controller_message(0, pkt_out);
+    of_object_delete(pkt_out);
 
     return TEST_PASS;
 }
@@ -935,7 +1003,8 @@ test_experimenter(void)
 
     exp = of_experimenter_new(OF_VERSION_1_0);
     /* Could add params, but core doesn't do anything with them */
-    TEST_INDIGO_OK(indigo_core_receive_controller_message(0, exp));
+    indigo_core_receive_controller_message(0, exp);
+    of_object_delete(exp);
 
     return TEST_PASS;
 }
@@ -999,7 +1068,7 @@ delete_all_entries(ft_instance_t ft)
     TEST_ASSERT(flow_del != NULL);
     of_flow_delete_out_port_set(flow_del, OF_PORT_DEST_WILDCARD);
     TEST_OK(of_flow_delete_match_set(flow_del, &match));
-    TEST_INDIGO_OK(handle_message(flow_del));
+    handle_message(flow_del);
     TEST_INDIGO_OK(do_barrier());
 
     TEST_OK(depopulate_table(ft));
@@ -1021,7 +1090,7 @@ test_simple_add_del(void)
         TEST_ASSERT(flow_add != NULL);
         TEST_ASSERT(of_flow_add_OF_VERSION_1_0_populate(flow_add, idx) != 0);
         of_flow_add_flags_set(flow_add, 0);
-        TEST_INDIGO_OK(handle_message(flow_add));
+        handle_message(flow_add);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, idx + 1);
     }
@@ -1051,7 +1120,7 @@ test_exact_add_del(void)
         TEST_ASSERT(of_flow_add_OF_VERSION_1_0_populate(flow_add, idx) != 0);
         of_flow_add_flags_set(flow_add, 0);
         flow_add_keep[idx] = of_object_dup(flow_add);
-        TEST_INDIGO_OK(handle_message(flow_add));
+        handle_message(flow_add);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, idx + 1);
     }
@@ -1066,7 +1135,7 @@ test_exact_add_del(void)
         of_flow_delete_strict_out_port_set(flow_del, OF_PORT_DEST_WILDCARD);
         of_flow_delete_strict_priority_set(flow_del, prio);
         TEST_OK(of_flow_delete_strict_match_set(flow_del, &match));
-        TEST_INDIGO_OK(handle_message(flow_del));
+        handle_message(flow_del);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, TEST_FLOW_COUNT - (idx + 1));
         of_flow_add_delete(flow_add_keep[idx]);
@@ -1095,7 +1164,7 @@ test_modify(void)
         TEST_ASSERT(of_flow_add_OF_VERSION_1_0_populate(flow_add, idx) != 0);
         of_flow_add_flags_set(flow_add, 0);
         flow_add_keep[idx] = of_object_dup(flow_add);
-        TEST_INDIGO_OK(handle_message(flow_add));
+        handle_message(flow_add);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, idx + 1);
     }
@@ -1110,7 +1179,7 @@ test_modify(void)
         of_flow_modify_out_port_set(flow_mod, OF_PORT_DEST_WILDCARD);
         of_flow_modify_priority_set(flow_mod, prio);
         TEST_OK(of_flow_modify_match_set(flow_mod, &match));
-        TEST_INDIGO_OK(handle_message(flow_mod));
+        handle_message(flow_mod);
         TEST_OK(do_barrier());
         CHECK_FLOW_COUNT(status, TEST_FLOW_COUNT);
         of_flow_add_delete(flow_add_keep[idx]);
@@ -1142,7 +1211,7 @@ test_modify_strict(void)
         TEST_ASSERT(of_flow_add_OF_VERSION_1_0_populate(flow_add, idx) != 0);
         of_flow_add_flags_set(flow_add, 0);
         flow_add_keep[idx] = of_object_dup(flow_add);
-        TEST_INDIGO_OK(handle_message(flow_add));
+        handle_message(flow_add);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, idx + 1);
     }
@@ -1157,7 +1226,7 @@ test_modify_strict(void)
         of_flow_modify_strict_out_port_set(flow_mod, OF_PORT_DEST_WILDCARD);
         of_flow_modify_strict_priority_set(flow_mod, prio);
         TEST_OK(of_flow_modify_strict_match_set(flow_mod, &match));
-        TEST_INDIGO_OK(handle_message(flow_mod));
+        handle_message(flow_mod);
         TEST_INDIGO_OK(do_barrier());
         CHECK_FLOW_COUNT(status, TEST_FLOW_COUNT);
         of_flow_add_delete(flow_add_keep[idx]);
@@ -1174,6 +1243,184 @@ test_modify_strict(void)
 int
 test_flow_stats(void)
 {
+    return TEST_PASS;
+}
+
+struct listener_state {
+    int count;
+    indigo_core_listener_result_t result;
+};
+
+struct listener_state listener_states[3];
+
+indigo_core_listener_result_t
+listener0(void *arg)
+{
+    listener_states[0].count++;
+    return listener_states[0].result;
+}
+
+indigo_core_listener_result_t
+listener1(void *arg)
+{
+    listener_states[1].count++;
+    return listener_states[1].result;
+}
+
+indigo_core_listener_result_t
+listener2(void *arg)
+{
+    listener_states[2].count++;
+    return listener_states[2].result;
+}
+
+int
+test_packet_in_listeners(void)
+{
+    memset(async_message_counters, 0, sizeof(async_message_counters));
+
+    /* Register 3 listeners */
+    TEST_INDIGO_OK(indigo_core_packet_in_listener_register(
+        (indigo_core_packet_in_listener_f)listener0));
+    TEST_INDIGO_OK(indigo_core_packet_in_listener_register(
+        (indigo_core_packet_in_listener_f)listener1));
+    TEST_INDIGO_OK(indigo_core_packet_in_listener_register(
+        (indigo_core_packet_in_listener_f)listener2));
+
+    memset(listener_states, 0, sizeof(listener_states));
+    listener_states[0].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[2].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+
+    /* Pass event through listeners */
+    TEST_INDIGO_OK(indigo_core_packet_in(of_packet_in_new(OF_VERSION_1_0)));
+    TEST_ASSERT(listener_states[0].count == 1);
+    TEST_ASSERT(listener_states[1].count == 1);
+    TEST_ASSERT(listener_states[2].count == 1);
+    TEST_ASSERT(async_message_counters[OF_PACKET_IN] == 1);
+
+    /* Drop event in one listener */
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_DROP;
+    TEST_INDIGO_OK(indigo_core_packet_in(of_packet_in_new(OF_VERSION_1_0)));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(async_message_counters[OF_PACKET_IN] == 1);
+
+    /* Unregister listeners */
+    indigo_core_packet_in_listener_unregister(
+        (indigo_core_packet_in_listener_f)listener1);
+    indigo_core_packet_in_listener_unregister(
+        (indigo_core_packet_in_listener_f)listener2);
+    indigo_core_packet_in_listener_unregister(
+        (indigo_core_packet_in_listener_f)listener0);
+
+    TEST_INDIGO_OK(indigo_core_packet_in(of_packet_in_new(OF_VERSION_1_0)));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(async_message_counters[OF_PACKET_IN] == 2);
+
+    return TEST_PASS;
+}
+
+int
+test_port_status_listeners(void)
+{
+    memset(async_message_counters, 0, sizeof(async_message_counters));
+
+    /* Register 3 listeners */
+    TEST_INDIGO_OK(indigo_core_port_status_listener_register(
+        (indigo_core_port_status_listener_f)listener0));
+    TEST_INDIGO_OK(indigo_core_port_status_listener_register(
+        (indigo_core_port_status_listener_f)listener1));
+    TEST_INDIGO_OK(indigo_core_port_status_listener_register(
+        (indigo_core_port_status_listener_f)listener2));
+
+    memset(listener_states, 0, sizeof(listener_states));
+    listener_states[0].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[2].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+
+    /* Pass event through listeners */
+    indigo_core_port_status_update(of_port_status_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 1);
+    TEST_ASSERT(listener_states[1].count == 1);
+    TEST_ASSERT(listener_states[2].count == 1);
+    TEST_ASSERT(async_message_counters[OF_PORT_STATUS] == 1);
+
+    /* Drop event in one listener */
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_DROP;
+    indigo_core_port_status_update(of_port_status_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(async_message_counters[OF_PORT_STATUS] == 1);
+
+    /* Unregister listeners */
+    indigo_core_port_status_listener_unregister(
+        (indigo_core_port_status_listener_f)listener1);
+    indigo_core_port_status_listener_unregister(
+        (indigo_core_port_status_listener_f)listener2);
+    indigo_core_port_status_listener_unregister(
+        (indigo_core_port_status_listener_f)listener0);
+
+    indigo_core_port_status_update(of_port_status_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(async_message_counters[OF_PORT_STATUS] == 2);
+
+    return TEST_PASS;
+}
+
+int
+test_message_listeners(void)
+{
+    memset(controller_message_counters, 0, sizeof(controller_message_counters));
+
+    /* Register 3 listeners */
+    TEST_INDIGO_OK(indigo_core_message_listener_register(
+        (indigo_core_message_listener_f)listener0));
+    TEST_INDIGO_OK(indigo_core_message_listener_register(
+        (indigo_core_message_listener_f)listener1));
+    TEST_INDIGO_OK(indigo_core_message_listener_register(
+        (indigo_core_message_listener_f)listener2));
+
+    memset(listener_states, 0, sizeof(listener_states));
+    listener_states[0].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+    listener_states[2].result = INDIGO_CORE_LISTENER_RESULT_PASS;
+
+    /* Pass event through listeners */
+    handle_message(of_features_request_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 1);
+    TEST_ASSERT(listener_states[1].count == 1);
+    TEST_ASSERT(listener_states[2].count == 1);
+    TEST_ASSERT(controller_message_counters[OF_FEATURES_REPLY] == 1);
+
+    /* Drop event in one listener */
+    listener_states[1].result = INDIGO_CORE_LISTENER_RESULT_DROP;
+    handle_message(of_features_request_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(controller_message_counters[OF_FEATURES_REPLY] == 1);
+
+    /* Unregister listeners */
+    indigo_core_message_listener_unregister(
+        (indigo_core_message_listener_f)listener1);
+    indigo_core_message_listener_unregister(
+        (indigo_core_message_listener_f)listener2);
+    indigo_core_message_listener_unregister(
+        (indigo_core_message_listener_f)listener0);
+
+    handle_message(of_features_request_new(OF_VERSION_1_0));
+    TEST_ASSERT(listener_states[0].count == 2);
+    TEST_ASSERT(listener_states[1].count == 2);
+    TEST_ASSERT(listener_states[2].count == 2);
+    TEST_ASSERT(controller_message_counters[OF_FEATURES_REPLY] == 2);
+
     return TEST_PASS;
 }
 
@@ -1208,6 +1455,18 @@ aim_main(int argc, char* argv[])
     RUN_TEST(exact_add_del);
     RUN_TEST(modify);
     RUN_TEST(modify_strict);
+
+    RUN_TEST(packet_in_listeners);
+    RUN_TEST(port_status_listeners);
+    RUN_TEST(message_listeners);
+
+    if (test_gentable() != TEST_PASS) {
+        return 1;
+    }
+
+    if (test_table() != TEST_PASS) {
+        return 1;
+    }
 
     /* Kill logging for OFStateManager as next tests gen errors */
     aim_log_pvs_set(aim_log_find("ofstatemanager"), NULL);

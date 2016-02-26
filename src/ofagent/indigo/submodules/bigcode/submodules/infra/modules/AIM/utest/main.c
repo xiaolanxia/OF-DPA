@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -49,7 +49,7 @@ int aim_main(int argc, char* argv[])
         if(strcmp(join, "This is a complete sentence.")) {
             printf("fail: join='%s'\n", join);
         }
-        AIM_FREE(join);
+        aim_free(join);
     }
 
     for(i = 0; i < argc; i++) {

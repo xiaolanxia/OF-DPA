@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* (C) Copyright Broadcom Corporation 2013-2014
+* (C) Copyright Broadcom Corporation 2013-2015
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/eventfd.h>
+#include <sys/param.h>
 #include <unistd.h>
 #include <libgen.h>
 #include <signal.h>
@@ -52,6 +53,8 @@
 #include <AIM/aim_pvs_syslog.h>
 #include <BigList/biglist.h>
 #include <indigo/port_manager.h>
+#include <indigo/types.h>
+#include <indigo/of_state_manager.h>
 #include <SocketManager/socketmanager.h>
 #include <OFConnectionManager/ofconnectionmanager.h>
 #include <OFStateManager/ofstatemanager.h>
@@ -59,8 +62,6 @@
 #include <ind_ofdpa_util.h>
 
 #define PIDFILE "/var/run/ofagent/.pid"
-
-#define OFAGENT_VERSION              1.0
 
 #define AIM_LOG_MODULE_NAME ofagent
 
@@ -97,6 +98,7 @@ typedef struct
   int           debuglvl;
   int           debugComps[10]; // 10: TODO: update from OF Agent debug levels
 #endif
+  of_dpid_t     dpid;
 } arguments_t;
 
 /* The options we understand. */
@@ -109,6 +111,7 @@ static struct argp_option options[] =
 #endif /* OFAGENT_APP */
   { "controller", 't', "IP:PORT", 0,  "Controller" },
   { "listen",   'l',  "IP:PORT", 0,  "Listen" },
+  { "dpid", 'i',  "DATAPATHID", 0,  "Specify Datapath ID." },
   { 0 }
 };
 
@@ -268,6 +271,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       listeners = biglist_append(listeners, arg);
       break;
 
+    case 'i':                           /* dpid */
+      errno = 0;
+
+      char *endptr;
+      arguments->dpid = strtoull(arg, &endptr, 16);
+      if (errno != 0)
+      {
+        argp_error(state, "Invalid dpid \"%s\", must be hex digit string", arg);
+        return errno;
+      }
+
+    break;
+
     case ARGP_KEY_NO_ARGS:
     case ARGP_KEY_END:
       break;
@@ -338,6 +354,7 @@ static int is_already_running(char *programName)
     {
       printf("%s: Failed to read PID from file %s; %s\r\n",
              programName, PIDFILE, strerror(errno));
+      fclose(pidfile);
       return 1;
     }
 
@@ -347,6 +364,7 @@ static int is_already_running(char *programName)
     {
       printf("%s: Failed to convert PID from file %s; %s\r\n",
              programName, PIDFILE, strerror(errno));
+      fclose(pidfile);
       return 1;
     }
 
@@ -358,6 +376,7 @@ static int is_already_running(char *programName)
     {
       printf("%s already running with PID %d.  Exiting...\r\n",
              programName, runningpid);
+      fclose(pidfile);
       return 1;
     }
 
@@ -367,54 +386,6 @@ static int is_already_running(char *programName)
   fclose(pidfile);
 
   return 0;
-}
-
-static char *stemname(char *path)
-{
-  regex_t regex;
-  regmatch_t *matches;
-  char *buffer;
-  char *stem;
-  char regexString[] = "(.*/){0,1}([[:print:]]+)\\..";
-  int rc;
-  size_t length;
-  int numSubs;
-
-  rc = regcomp(&regex, regexString, REG_EXTENDED);
-  if (0 != rc)
-  {
-    length = regerror(rc, &regex, NULL, 0);
-    buffer = malloc(length + 1);
-    (void)regerror(rc, &regex, buffer, length);
-    printf("%s\r\n", buffer);
-    regfree(&regex);
-    return NULL;
-  }
-
-  numSubs = regex.re_nsub + 1;
-  matches = calloc(numSubs, sizeof(matches[0]));
-  if (NULL == matches)
-  {
-    printf("Failed to alloc memory for regex match.\r\n");
-    regfree(&regex);
-    return NULL;
-  }
-
-  if (0 != regexec(&regex, path, numSubs, matches, 0))
-  {
-    printf("Bad file name \"%s\" -- does not match regex.\r\n", path);
-    free(matches);
-    regfree(&regex);
-    return NULL;
-  }
-
-  path[matches[2].rm_eo] = '\0';
-  stem = &path[matches[2].rm_so];
-
-  free(matches);
-  regfree(&regex);
-
-  return stem;
 }
 
 static void
@@ -473,7 +444,6 @@ int main(int argc, char *argv[])
   char fullProgName[200];
   char exeName[100];
   pid_t mypid = getpid();
-  char *fileStemName;
 #ifdef OFAGENT_APP
   const char *names;
   int j;
@@ -497,15 +467,10 @@ int main(int argc, char *argv[])
     .debuglvl   = 0,
     .debugComps = { 0 },
 #endif
+    .dpid = OFSTATEMANAGER_CONFIG_DPID_DEFAULT,
   };
 
-  fileStemName = stemname(strdup(__FILE__));
-  if (NULL == fileStemName)
-  {
-    exit(EXIT_FAILURE);
-  }
-
-  argp_program_version = versionBuf;
+  argp_program_version = ""; 
 
   strcpy(docBuffer, "Runs the main OFAgent application.\vDefault values:\n");
   i = strlen(docBuffer);
@@ -526,6 +491,8 @@ int main(int argc, char *argv[])
     }
   }
 #endif
+  i += snprintf(&docBuffer[i], sizeof(docBuffer) - i, "DATAPATHID = 0x%016llX\n", (long long unsigned int)OFSTATEMANAGER_CONFIG_DPID_DEFAULT);
+
   i += snprintf(&docBuffer[i], sizeof(docBuffer) - i, "\n");
 
   AIM_LOG_STRUCT_REGISTER();
@@ -540,7 +507,7 @@ int main(int argc, char *argv[])
   /*
    * Display the build date and time.
    */
-  AIM_LOG_MSG("\r\n%s\r\n\r\n", versionBuf);
+  AIM_LOG_MSG("%s", versionBuf);
 
   /* Parse our arguments; every option seen by `parse_opt' will be reflected in
      `arguments'. */
@@ -553,12 +520,14 @@ int main(int argc, char *argv[])
 
   sprintf(exeName, "/proc/%u/exe", mypid);
   errno = 0;
-  if (-1 == readlink(exeName, fullProgName, sizeof(fullProgName)))
+  i = readlink(exeName, fullProgName, sizeof(fullProgName));
+  if (-1 == i)
   {
     printf("%s: Failed to determine full path of executable, %s.\r\n",
            __FUNCTION__, strerror(errno));
     exit(EXIT_FAILURE);
   }
+  fullProgName[MIN(i, sizeof(fullProgName) - 1)] = '\0';
 
   errno = 0;
   if (-1 == chdir(dirname(fullProgName)))
@@ -600,10 +569,24 @@ int main(int argc, char *argv[])
       aim_log_fid_set_all(AIM_LOG_FLAG_TRACE, 1);
   }
 
+  /* Setup Indigo DPID */
+  printf("OF Datapath ID: 0x%016llX\n", (long long unsigned int)arguments.dpid);
+  (void)indigo_core_dpid_set(arguments.dpid);
+
   /* Initialize all modules */
   printf("Initializing the system.\r\n");
 
   rc = ofdpaClientInitialize(programName);
+  if (rc != OFDPA_E_NONE)
+  {
+    return rc;
+  }
+  rc = ofdpaClientEventSockBind();
+  if (rc != OFDPA_E_NONE)
+  {
+    return rc;
+  }
+  rc = ofdpaClientPktSockBind();
   if (rc != OFDPA_E_NONE)
   {
     return rc;
@@ -704,11 +687,11 @@ int main(int argc, char *argv[])
   of_desc_str_t mfr_desc = "Broadcom Corp.";
   ind_core_mfr_desc_set(mfr_desc);
 
-  of_desc_str_t sw_desc = "OF-DPA 1.0";
+  of_desc_str_t sw_desc = "OF-DPA 2.0";
   ind_core_sw_desc_set(sw_desc);
 
   of_desc_str_t hw_desc = "";
-  snprintf(hw_desc, sizeof(hw_desc), "OF-DPA 1.0");
+  snprintf(hw_desc, sizeof(hw_desc), "OF-DPA 2.0");
   ind_core_hw_desc_set(hw_desc);
 
   of_desc_str_t dp_desc = "";

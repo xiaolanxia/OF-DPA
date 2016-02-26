@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -62,6 +62,11 @@ extern int have_local_connection;
  */
 extern int remote_connection_count;
 
+/**
+ * Role request generation ID
+ */
+extern uint64_t ind_cxn_generation_id;
+
 
 /* conversion functions from cookie with generation id to connection and vice versa */
 void *cxn_to_cookie(connection_t *cxn);
@@ -93,6 +98,8 @@ extern indigo_error_t ind_cxn_send_controller_message(indigo_cxn_id_t cxn_id,
 extern void cxn_message_track_setup(connection_t *cxn, of_object_t *obj);
 
 void ind_cxn_change_master(indigo_cxn_id_t master_id);
+
+void ind_cxn_populate_connection_list(of_list_bsn_controller_connection_t *list);
 
 /**
  * The OF message callback vector from state manager

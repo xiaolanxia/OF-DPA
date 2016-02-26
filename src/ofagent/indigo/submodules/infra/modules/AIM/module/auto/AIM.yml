@@ -165,9 +165,12 @@ definitions:
     AIM:
       macros:
         - malloc
+        - calloc
+        - realloc
         - free
         - memset
         - memcpy
+        - memcmp
         - strncpy
         - strstr
         - vsnprintf
@@ -183,7 +186,6 @@ definitions:
   util:
     aim:
       objects:
-        - zmalloc
         - strlcpy
 
 

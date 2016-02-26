@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -45,6 +45,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/errno.h>
 
 #include "ofconnectionmanager_int.h"
 
@@ -66,8 +67,7 @@ static void
 ind_cxn_listen_socket_ready(int socket_id, void *cookie, int read_ready,
                             int write_ready, int error_seen);
 
-static indigo_error_t
-ind_cxn_send_async_controller_message(of_object_t *obj);
+static void ind_cxn_status_notify(void);
 
 /****************************************************************
  * Connection Manager Data shared within module
@@ -78,6 +78,8 @@ int remote_connection_count;
 int successful_handshakes; /* Number of times handshake completes */
 
 uint32_t ind_cxn_internal_errors;
+
+uint64_t ind_cxn_generation_id;
 
 /****************************************************************
  * Connection Manager Private Data
@@ -166,7 +168,7 @@ void *cxn_to_cookie(connection_t *cxn)
 {
     void *cookie;
     if (CXN_ACTIVE(cxn)) {
-        cookie = (void *) 
+        cookie = (void *)
             ((uintptr_t)
              (((cxn->generation_id & GEN_ID_MASK) << GEN_ID_SHIFT) |
               (cxn->cxn_id & CXN_ID_MASK)));
@@ -364,9 +366,12 @@ ind_cxn_status_change(connection_t *cxn)
                 LOG_VERBOSE("Clearing IP mask map");
                 of_ip_mask_map_init();
             }
+        } if (CONNECTION_STATE(cxn) == INDIGO_CXN_S_HANDSHAKE_COMPLETE) {
+            ind_cxn_status_notify();
         } else if (CONNECTION_STATE(cxn) == INDIGO_CXN_S_CLOSING) {
             --remote_connection_count;
             indigo_core_connection_count_notify(remote_connection_count);
+            ind_cxn_status_notify();
             if (CONNECTION_STATE(cxn) == INDIGO_CXN_S_CLOSING) {
                 LOG_VERBOSE("Clearing preferred connection");
                 preferred_cxn_id = -1;
@@ -375,6 +380,36 @@ ind_cxn_status_change(connection_t *cxn)
     }
 
     LOG_TRACE("Cxn status change, rmt count %d", remote_connection_count);
+}
+
+/*
+ * Send an of_bsn_controller_connections_reply to each connection
+ *
+ * HACK reusing the reply message for this async notification.
+ */
+
+static void
+ind_cxn_status_notify(void)
+{
+    of_version_t version;
+
+    if (indigo_cxn_get_async_version(&version) < 0) {
+        return;
+    }
+
+    if (version < OF_VERSION_1_3) {
+        return;
+    }
+
+    of_object_t *msg = of_bsn_controller_connections_reply_new(version);
+    AIM_TRUE_OR_DIE(msg != NULL);
+
+    of_list_bsn_controller_connection_t list;
+    of_bsn_controller_connections_reply_connections_bind(msg, &list);
+
+    ind_cxn_populate_connection_list(&list);
+
+    indigo_cxn_send_async_message(msg);
 }
 
 /****************************************************************
@@ -399,6 +434,10 @@ module_init(void)
     }
 
     ind_cfg_register(&ind_cxn_cfg_ops);
+
+    ind_cxn_generation_id = 0;
+
+    LOG_VERBOSE("Initial generation id: 0x%016"PRIx64, ind_cxn_generation_id);
 
     return INDIGO_ERROR_NONE;
 }
@@ -426,25 +465,30 @@ listen_cxn_init(connection_t *cxn)
 {
     struct sockaddr_in cxn_addr;
     indigo_error_t rv;
+    indigo_cxn_params_tcp_over_ipv4_t *params;
 
     LOG_VERBOSE("Initializing listening socket");
+
+    params = &cxn->protocol_params.tcp_over_ipv4;
 
     /* complete the socket structure */
     memset(&cxn_addr, 0, sizeof(cxn_addr));
     cxn_addr.sin_family = AF_INET;
-    cxn_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* @fixme */
-    cxn_addr.sin_port =
-        htons(cxn->protocol_params.tcp_over_ipv4.controller_port);
+    if (inet_pton(AF_INET, params->controller_ip, &cxn_addr.sin_addr) != 1) {
+        LOG_ERROR("Could not convert %s to inet address", params->controller_ip);
+        return INDIGO_ERROR_UNKNOWN;
+    }
+    cxn_addr.sin_port = htons(params->controller_port);
 
     /* bind the socket to the port number */
     if (bind(cxn->sd, (struct sockaddr *) &cxn_addr, sizeof(cxn_addr)) == -1) {
-        LOG_ERROR("Could not bind to socket for local cxn");
+        LOG_ERROR("Could not bind to socket for local cxn: %s", strerror(errno));
         return INDIGO_ERROR_UNKNOWN;
     }
 
     /* show that we are willing to listen */
     if (listen(cxn->sd, LOCAL_CXN_BACKLOG) == -1) {
-        LOG_ERROR("Could not listen to socket for local cxn");
+        LOG_ERROR("Could not listen to socket for local cxn: %s", strerror(errno));
         return INDIGO_ERROR_UNKNOWN;
     }
 
@@ -453,7 +497,7 @@ listen_cxn_init(connection_t *cxn)
             cxn->sd, ind_cxn_listen_socket_ready,
             cxn, IND_CXN_EVENT_PRIORITY);
     if (rv < 0) {
-        LOG_ERROR("Could not register with soc man");
+        LOG_ERROR("Could not register with socket manager: %s", indigo_strerror(rv));
         return INDIGO_ERROR_UNKNOWN;
     }
 
@@ -509,7 +553,7 @@ connection_socket_setup(indigo_cxn_protocol_params_t *protocol_params,
         /* Attempt to create the socket */
         cxn->sd = socket(AF_INET, SOCK_STREAM, 0);
         if (cxn->sd < 0) {
-            LOG_ERROR("Failed to create controller connection socket");
+            LOG_ERROR("Failed to create controller connection socket: %s", strerror(errno));
             return NULL;
         }
     } else {
@@ -519,7 +563,7 @@ connection_socket_setup(indigo_cxn_protocol_params_t *protocol_params,
     soc_flags = fcntl(cxn->sd, F_GETFL, 0);
     if (soc_flags == -1 || fcntl(cxn->sd, F_SETFL,
                                  soc_flags | O_NONBLOCK) == -1) {
-        LOG_ERROR("Failed to set non-blocking flag for socket");
+        LOG_ERROR("Failed to set non-blocking flag for socket: %s", strerror(errno));
         close(cxn->sd);
         return NULL;
     }
@@ -646,7 +690,7 @@ indigo_cxn_connection_config_get(
         return INDIGO_ERROR_PARAM;
     }
 
-    INDIGO_MEM_COPY(config, &connection[cxn_id].config_params, 
+    INDIGO_MEM_COPY(config, &connection[cxn_id].config_params,
                     sizeof(*config));
 
     return INDIGO_ERROR_NONE;
@@ -669,6 +713,32 @@ indigo_cxn_connection_status_get(
 }
 
 /**
+ * Send a role status message
+ *
+ * These are sent when a controller's role changes for any reason
+ * other than it directly sending a role request message.
+ */
+void
+ind_cxn_send_role_status(connection_t *cxn, int reason)
+{
+    /* Need to make translate_to_openflow_role public */
+    /* Master -> slave is currently the only possible case */
+    INDIGO_ASSERT(cxn->status.role == INDIGO_CXN_R_SLAVE);
+
+    if (cxn->status.negotiated_version == OF_VERSION_1_3) {
+        of_bsn_role_status_t *msg = of_bsn_role_status_new(OF_VERSION_1_3);
+        if (msg == NULL) {
+            LOG_INFO("Failed to allocate role status message");
+            return;
+        }
+        of_bsn_role_status_role_set(msg, OF_CONTROLLER_ROLE_SLAVE);
+        of_bsn_role_status_reason_set(msg, reason);
+        of_bsn_role_status_generation_id_set(msg, ind_cxn_generation_id);
+        indigo_cxn_send_controller_message(cxn->cxn_id, msg);
+    }
+}
+
+/**
  * Change the master connection
  *
  * @param master_id The connection id of the new master
@@ -687,7 +757,62 @@ ind_cxn_change_master(indigo_cxn_id_t master_id)
         } else if (cxn->status.role == INDIGO_CXN_R_MASTER) {
             LOG_INFO("Downgrading cxn %s to slave", cxn_id_ip_string(cxn_id));
             cxn->status.role = INDIGO_CXN_R_SLAVE;
+            ind_cxn_send_role_status(
+                cxn, OFP_BSN_CONTROLLER_ROLE_REASON_MASTER_REQUEST);
         }
+    }
+}
+
+void
+ind_cxn_populate_connection_list(of_list_bsn_controller_connection_t *list)
+{
+    indigo_cxn_id_t cxn_id;
+    connection_t *cxn;
+    FOREACH_REMOTE_ACTIVE_CXN(cxn_id, cxn) {
+        of_bsn_controller_connection_t entry;
+        of_desc_str_t uri;
+        uint32_t role;
+
+        of_bsn_controller_connection_init(&entry, list->version, -1, 1);
+        if (of_list_bsn_controller_connection_append_bind(list, &entry) < 0) {
+            LOG_ERROR("Failed to append controller connection to list");
+            break;
+        }
+
+        if (CXN_HANDSHAKE_COMPLETE(cxn)) {
+            of_bsn_controller_connection_state_set(&entry, 1);
+        } else {
+            of_bsn_controller_connection_state_set(&entry, 0);
+        }
+
+        switch (cxn->status.role) {
+        case INDIGO_CXN_R_MASTER:
+            role = OF_CONTROLLER_ROLE_MASTER;
+            break;
+        case INDIGO_CXN_R_SLAVE:
+            role = OF_CONTROLLER_ROLE_SLAVE;
+            break;
+        case INDIGO_CXN_R_EQUAL:
+            role = OF_CONTROLLER_ROLE_EQUAL;
+            break;
+        default:
+            AIM_ASSERT(0);
+            role = -1;
+            break;
+        }
+
+        of_bsn_controller_connection_role_set(&entry, role);
+
+        memset(uri, 0, sizeof(uri));
+
+        if (cxn->protocol_params.header.protocol == INDIGO_CXN_PROTO_TCP_OVER_IPV4) {
+            indigo_cxn_params_tcp_over_ipv4_t *proto =
+                &cxn->protocol_params.tcp_over_ipv4;
+            snprintf(uri, sizeof(uri), "tcp://%s:%d",
+                proto->controller_ip, proto->controller_port);
+        }
+
+        of_bsn_controller_connection_uri_set(&entry, uri);
     }
 }
 
@@ -705,37 +830,33 @@ ind_cxn_change_master(indigo_cxn_id_t master_id)
 
 /* Send an OpenFlow message to a controller connection
  *
- * This routine ALWAYS takes ownership of the object, even if it returns
- * an error.
+ * This routine takes ownership of the object.
+ *
+ * In some cases the message may be dropped.
  */
-indigo_error_t
+void
 indigo_cxn_send_controller_message(indigo_cxn_id_t cxn_id, of_object_t *obj)
 {
     uint8_t *data = NULL;
     int len;
-    int rv = INDIGO_ERROR_NONE;
     connection_t *cxn;
-
-    LOG_TRACE("Send msg type %d to cxn %d", obj->object_id, cxn_id);
-
-    /* TODO create a new public API for this? */
-    if (INDIGO_CXN_UNSPECIFIED(cxn_id)) {
-        return ind_cxn_send_async_controller_message(obj);
-    }
+    uint32_t xid;
 
     if (INDIGO_CXN_INVALID(cxn_id)) {
         LOG_ERROR("Invalid or no active connection: %d", cxn_id);
-        rv = INDIGO_ERROR_NOT_FOUND;
         goto done;
     }
 
     cxn = CXN_ID_TO_CONNECTION(cxn_id);
     if (!CXN_TCP_CONNECTED(cxn)) {
         LOG_ERROR("Connection id %d is not connected", cxn_id);
-        rv = INDIGO_ERROR_NOT_FOUND;
         goto done;
     }
 
+    xid = of_message_xid_get(OF_BUFFER_TO_MESSAGE(OF_OBJECT_BUFFER_INDEX(obj, 0)));
+
+    LOG_VERBOSE("cxn %s: Sending %s message xid %u",
+                cxn_ip_string(cxn), of_object_id_str[obj->object_id], xid);
 
     if(cxn->trace_pvs) {
         aim_printf(cxn->trace_pvs, "** of_msg_trace: send to cxn=%d\n", cxn->cxn_id);
@@ -744,18 +865,10 @@ indigo_cxn_send_controller_message(indigo_cxn_id_t cxn_id, of_object_t *obj)
     }
 
 
-    if (obj->object_id == OF_FEATURES_REPLY) {
-        if (CONNECTION_STATE(cxn) == INDIGO_CXN_S_CONNECTING) {
-            ++successful_handshakes;
-            ind_cxn_state_set(cxn, INDIGO_CXN_S_HANDSHAKE_COMPLETE);
-        }
-    }
-
     if (!CXN_HANDSHAKE_COMPLETE(cxn)) {
         if (IS_ASYNC_MSG(obj)) {
             LOG_TRACE("Handshake not complete; drop async msg %s",
                       of_object_id_str[obj->object_id]);
-            rv = INDIGO_ERROR_NOT_READY;
             goto done;
         }
     }
@@ -766,23 +879,17 @@ indigo_cxn_send_controller_message(indigo_cxn_id_t cxn_id, of_object_t *obj)
         if (CXN_DROP_PACKET_IN(cxn, obj)) {
             LOG_TRACE("Dropping packetIn");
             cxn->status.packet_in_drop++;
-            /* @todo is this the right error code? */
-            rv = INDIGO_ERROR_RESOURCE;
             goto done;
         }
     } else if (obj->object_id == OF_FLOW_REMOVED) {
         if (CXN_DROP_FLOW_REMOVED(cxn, obj)) {
             LOG_TRACE("Dropping flowRemoved");
             cxn->status.flow_removed_drop++;
-            /* @todo is this the right error code? */
-            rv = INDIGO_ERROR_RESOURCE;
             goto done;
         }
     }
 
     /* Steal the buffer and enqueue the data */
-    LOG_VERBOSE("Sending message type %s to connection %s",
-                of_object_id_str[obj->object_id], cxn_ip_string(cxn));
     LOG_OBJECT(obj);
 
     of_object_wire_buffer_steal((of_object_t *)obj, &data);
@@ -797,14 +904,19 @@ indigo_cxn_send_controller_message(indigo_cxn_id_t cxn_id, of_object_t *obj)
 
     if (ind_cxn_instance_enqueue(cxn, data, len) < 0) {
         LOG_ERROR("Could not enqueue message data, disconnecting");
-        INDIGO_MEM_FREE(data);
-        rv = INDIGO_ERROR_UNKNOWN;
+        aim_free(data);
         ind_cxn_disconnect(cxn);
+    }
+
+    if (obj->object_id == OF_FEATURES_REPLY) {
+        if (CONNECTION_STATE(cxn) == INDIGO_CXN_S_CONNECTING) {
+            ++successful_handshakes;
+            ind_cxn_state_set(cxn, INDIGO_CXN_S_HANDSHAKE_COMPLETE);
+        }
     }
 
  done:
     of_object_delete(obj);
-    return rv;
 }
 
 /**
@@ -834,8 +946,8 @@ ind_cxn_accepts_async_message(const connection_t *cxn, const of_object_t *obj)
 /**
  * Send an async message to all interested connections.
  */
-static indigo_error_t
-ind_cxn_send_async_controller_message(of_object_t *obj)
+void
+indigo_cxn_send_async_message(of_object_t *obj)
 {
     indigo_cxn_id_t cxn_id;
     connection_t *cxn;
@@ -865,11 +977,10 @@ ind_cxn_send_async_controller_message(of_object_t *obj)
     if (first_cxn_id != INDIGO_CXN_ID_UNSPECIFIED) {
         indigo_cxn_send_controller_message(first_cxn_id, obj);
     } else {
-        /* No interested connections */
+        LOG_VERBOSE("Dropping async %s message, no interested connections",
+                    of_object_id_str[obj->object_id]);
         of_object_delete(obj);
     }
-
-    return INDIGO_ERROR_NONE;
 }
 
 /**
@@ -910,7 +1021,7 @@ indigo_cxn_status_change_register(indigo_cxn_status_change_f handler,
         }
     }
 
-    LOG_ERROR("Could not find free slot fo status change callback");
+    LOG_ERROR("Could not find free slot for status change callback");
     return INDIGO_ERROR_RESOURCE;
 }
 
@@ -1079,47 +1190,38 @@ ind_cxn_finish(void)
  * directly in the wire buffer.
  */
 
-indigo_error_t
-indigo_cxn_send_error_msg(of_version_t version, indigo_cxn_id_t cxn_id,
-                          uint32_t xid, uint16_t type, uint16_t code,
-                          of_octets_t *octets)
+void
+indigo_cxn_send_error_reply(indigo_cxn_id_t cxn_id, of_object_t *orig,
+                            uint16_t type, uint16_t code)
 {
     of_error_msg_t *msg;
-    connection_t *cxn;
+    of_octets_t payload;
+    uint32_t xid;
 
-    if (!CXN_ID_VALID(cxn_id) || !CXN_ID_TCP_CONNECTED(cxn_id)) {
-        return INDIGO_ERROR_PARAM;
-    }
+    payload.data = OF_OBJECT_BUFFER_INDEX(orig, 0);
+    payload.bytes = orig->length;
 
-    cxn = CXN_ID_TO_CONNECTION(cxn_id);
-    if (!OF_VERSION_OKAY(version)) {
-        if (cxn->status.negotiated_version == OF_VERSION_UNKNOWN) {
-            version = OF_VERSION_1_0;
-        } else {
-            version = cxn->status.negotiated_version;
-        }
-        INDIGO_ASSERT(OF_VERSION_OKAY(version));
-    }
+    xid = of_message_xid_get(OF_BUFFER_TO_MESSAGE(payload.data));
 
-    LOG_TRACE("Sending error msg to %p. type %d. code %d.",
+    LOG_TRACE("Sending error msg to %s. type %d. code %d.",
               cxn_id_ip_string(cxn_id), type, code);
-    if ((msg = of_hello_failed_error_msg_new(version)) == NULL) {
-        LOG_ERROR("Could not create error message");
-        return INDIGO_ERROR_RESOURCE;
+
+    if ((msg = of_hello_failed_error_msg_new(orig->version)) == NULL) {
+        LOG_ERROR("Could not allocate error message");
+        return;
     }
 
     of_hello_failed_error_msg_xid_set(msg, xid);
     of_hello_failed_error_msg_code_set(msg, code);
-    if (octets != NULL) {
-        if (of_hello_failed_error_msg_data_set(msg, octets) < 0) {
-            LOG_WARN("Failed to append data to error message");
-        }
+
+    if (of_hello_failed_error_msg_data_set(msg, &payload) < 0) {
+        LOG_WARN("Failed to append original request to error message");
     }
 
     /* HACK manually set the type field */
     of_wire_buffer_u16_set(OF_OBJECT_TO_WBUF(msg), 8, type);
 
-    return indigo_cxn_send_controller_message(cxn_id, (of_object_t *)msg);
+    indigo_cxn_send_controller_message(cxn_id, msg);
 }
 
 /****************************************************************
@@ -1198,7 +1300,7 @@ ind_cxn_listen_socket_ready(int socket_id, void *cookie, int read_ready,
                     &addrlen);
 
     if (new_sd == -1) {
-        LOG_ERROR("Error on accept for local cxn");
+        LOG_ERROR("Error on accept for local cxn: %s", strerror(errno));
         ++ind_cxn_internal_errors;
         return;
     }
@@ -1242,7 +1344,7 @@ indigo_cxn_list(indigo_cxn_info_t** list)
     indigo_cxn_id_t cxn_id;
     connection_t *cxn;
     FOREACH_ACTIVE_CXN(cxn_id, cxn) {
-        indigo_cxn_info_t* entry = INDIGO_MEM_ALLOC(sizeof(*entry));
+        indigo_cxn_info_t* entry = aim_malloc(sizeof(*entry));
         entry->cxn_id = cxn_id;
         entry->cxn_status = cxn->status;
         entry->cxn_proto_params = cxn->protocol_params;
@@ -1260,7 +1362,7 @@ indigo_cxn_list_destroy(indigo_cxn_info_t* list)
     indigo_cxn_info_t* e = list;
     while(e) {
         indigo_cxn_info_t* link = e->next;
-        INDIGO_MEM_FREE(e);
+        aim_free(e);
         e = link;
     }
 }
@@ -1274,7 +1376,7 @@ ind_cxn_reset(indigo_cxn_id_t cxn_id)
         return;
     }
 
-    LOG_VERBOSE("Connection reset for id %d\n", cxn_id);
+    LOG_VERBOSE("Connection reset for id %d", cxn_id);
     if (cxn_id == IND_CXN_RESET_ALL) {
         /* Iterate thru active connections */
         FOREACH_ACTIVE_CXN(cxn_id, cxn) {
@@ -1380,25 +1482,25 @@ indigo_cxn_get_async_version(of_version_t* of_version)
     indigo_cxn_id_t cxn_id;
     connection_t *cxn;
 
-    /* See if there is any connection with role as MASTER */ 
+    /* See if there is any connection with role as MASTER */
     FOREACH_HS_COMPLETE_CXN_WITH_ROLE(cxn_id, cxn, INDIGO_CXN_R_MASTER) {
         *of_version = cxn->status.negotiated_version;
         return INDIGO_ERROR_NONE;
     }
 
-    /* See if there is any connection with role as EQUAL */ 
+    /* See if there is any connection with role as EQUAL */
     FOREACH_HS_COMPLETE_CXN_WITH_ROLE(cxn_id, cxn, INDIGO_CXN_R_EQUAL) {
         *of_version = cxn->status.negotiated_version;
         return INDIGO_ERROR_NONE;
     }
 
-    /* See if there is any connection with role as SLAVE */ 
+    /* See if there is any connection with role as SLAVE */
     FOREACH_HS_COMPLETE_CXN_WITH_ROLE(cxn_id, cxn, INDIGO_CXN_R_SLAVE) {
         *of_version = cxn->status.negotiated_version;
         return INDIGO_ERROR_NONE;
     }
 
-    /* See if there is any connection with role as UNKNOWN, e.g. oftest */ 
+    /* See if there is any connection with role as UNKNOWN, e.g. oftest */
     FOREACH_HS_COMPLETE_CXN_WITH_ROLE(cxn_id, cxn, INDIGO_CXN_R_UNKNOWN) {
         *of_version = cxn->status.negotiated_version;
         return INDIGO_ERROR_NONE;

@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -39,8 +39,9 @@
 #include "ofstatemanager_decs.h"
 #include "handlers.h"
 #include "ft.h"
-
-static void flow_expiration_timer(void *cookie);
+#include "expiration.h"
+#include "listener.h"
+#include "table.h"
 
 static void
 process_flow_removal(ft_entry_t *entry,
@@ -101,8 +102,6 @@ static int ind_core_connection_count;
 indigo_error_t
 indigo_core_packet_in(of_packet_in_t *packet_in)
 {
-    int rv;
-
     if (!ind_core_module_enabled) {
         LOG_TRACE("Packet in called when not enabled");
         of_object_delete(packet_in);
@@ -112,16 +111,15 @@ indigo_core_packet_in(of_packet_in_t *packet_in)
     LOG_TRACE("Packet in rcvd");
     ind_core_packet_ins++;
 
-    rv = indigo_cxn_send_controller_message(INDIGO_CXN_ID_UNSPECIFIED,
-                                            packet_in);
-
-    /* PAN-163.  Not sure why these get printed out; changed to TRACE */
-    /* Don't log error when there is no preferred connection in cxn manager */
-    if (rv != INDIGO_ERROR_NONE && rv != INDIGO_ERROR_NOT_READY) {
-        LOG_TRACE("Error forwarding packet in to controller");
+    if (ind_core_packet_in_notify(packet_in) == INDIGO_CORE_LISTENER_RESULT_DROP) {
+        LOG_TRACE("Listener dropped packet-in");
+        of_object_delete(packet_in);
+        return INDIGO_ERROR_NONE;
     }
 
-    return rv;
+    indigo_cxn_send_async_message(packet_in);
+
+    return INDIGO_ERROR_NONE;
 }
 
 
@@ -133,24 +131,30 @@ indigo_core_packet_in(of_packet_in_t *packet_in)
  */
 
 static void
-send_flow_removed_message(ft_entry_t *entry, indigo_fi_flow_removed_t reason)
+send_flow_removed_message(ft_entry_t *entry,
+                          indigo_fi_flow_removed_t reason,
+                          indigo_fi_flow_stats_t *final_stats)
 {
     of_flow_removed_t *msg;
-    int rv = 0;
     uint32_t secs;
     uint32_t nsecs;
     indigo_time_t current;
+    uint64_t packets, bytes;
+    of_version_t ver;
 
     current = INDIGO_CURRENT_TIME;
 
-    /* TODO get version from OFConnectionManager */
-    if ((msg = of_flow_removed_new(entry->match.version)) == NULL) {
+    if (indigo_cxn_get_async_version(&ver) < 0) {
+        /* No controllers connected */
+        return;
+    }
+
+    if ((msg = of_flow_removed_new(ver)) == NULL) {
+        LOG_ERROR("Failed to allocate flow_removed message");
         return;
     }
 
     calc_duration(current, entry->insert_time, &secs, &nsecs);
-
-    of_flow_removed_xid_set(msg, ind_core_xid_alloc());
 
     of_flow_removed_cookie_set(msg, entry->cookie);
     of_flow_removed_priority_set(msg, entry->priority);
@@ -177,20 +181,21 @@ send_flow_removed_message(ft_entry_t *entry, indigo_fi_flow_removed_t reason)
     of_flow_removed_reason_set(msg, reason);
     of_flow_removed_duration_sec_set(msg, secs);
     of_flow_removed_duration_nsec_set(msg, nsecs);
-    of_flow_removed_packet_count_set(msg, entry->packets);
-    of_flow_removed_byte_count_set(msg, entry->bytes);
 
-    /* @fixme hard_timeout and table_id are not in OF 1.0 */
-
-    /* @fixme Should a cxn-id be specified? */
-    rv = indigo_cxn_send_controller_message(INDIGO_CXN_ID_UNSPECIFIED, msg);
-    if (rv != INDIGO_ERROR_NONE) {
-        LOG_ERROR("Error sending flow removed message");
-        return;
+    if (final_stats != NULL) {
+        INDIGO_ASSERT(final_stats->flow_id == entry->id);
+        packets = final_stats->packets;
+        bytes = final_stats->bytes;
+    } else {
+        packets = (uint64_t)-1;
+        bytes = (uint64_t)-1;
     }
+    of_flow_removed_packet_count_set(msg, packets);
+    of_flow_removed_byte_count_set(msg, bytes);
 
-    return;
+    indigo_cxn_send_async_message(msg);
 }
+
 
 /****************************************************************/
 
@@ -204,135 +209,191 @@ send_flow_removed_message(ft_entry_t *entry, indigo_fi_flow_removed_t reason)
  * In any case, ownership of obj is NOT returned to the caller.
  */
 
-indigo_error_t
+void
 indigo_core_receive_controller_message(indigo_cxn_id_t cxn, of_object_t *obj)
 {
-    int rv = INDIGO_ERROR_NONE;
+    if (!ind_core_module_enabled) {
+        LOG_ERROR("Not enabled");
+        return;
+    }
 
-    ENABLED_CHECK;
+    LOG_TRACE("Received %s message from cxn %d",
+              of_object_id_str[obj->object_id], cxn);
 
-    LOG_TRACE("Received msg type %s (%d)",
-             of_object_id_str[obj->object_id], obj->object_id);
-
-    /* Add non-default jump table mechanism here */
-    // if (dynamic_handlers[obj->object_id] != NULL) {
-    //     rv = dynamic_handlers[obj->object_id](obj, cxn);
-    //     LOG_TRACE("Handled msg %s with dynamic hndlr. rv %d (%s)",
-    //           of_object_id_str[obj->object_id], rv, ls_error_strings[rv]);
-    //     return rv;
-    // }
+    if (ind_core_message_notify(cxn, obj) == INDIGO_CORE_LISTENER_RESULT_DROP) {
+        LOG_TRACE("Listener dropped message");
+        return;
+    }
 
     /* Default handlers */
     switch (obj->object_id) {
 
-    case OF_HELLO:
-        rv = ind_core_hello_handler(obj, cxn);
-        break;
-
     case OF_PACKET_OUT:
         ind_core_packet_outs++;
-        rv = ind_core_packet_out_handler(obj, cxn);
+        ind_core_packet_out_handler(obj, cxn);
         break;
 
     case OF_FLOW_ADD:
         ind_core_flow_mods++;
-        rv = ind_core_flow_add_handler(obj, cxn);
+        ind_core_flow_add_handler(obj, cxn);
         break;
 
     case OF_FLOW_MODIFY:
         ind_core_flow_mods++;
-        rv = ind_core_flow_modify_handler(obj, cxn);
+        ind_core_flow_modify_handler(obj, cxn);
         break;
 
     case OF_FLOW_MODIFY_STRICT:
         ind_core_flow_mods++;
-        rv = ind_core_flow_modify_strict_handler(obj, cxn);
+        ind_core_flow_modify_strict_handler(obj, cxn);
         break;
 
     case OF_FLOW_DELETE:
         ind_core_flow_mods++;
-        rv = ind_core_flow_delete_handler(obj, cxn);
+        ind_core_flow_delete_handler(obj, cxn);
         break;
 
     case OF_FLOW_DELETE_STRICT:
         ind_core_flow_mods++;
-        rv = ind_core_flow_delete_strict_handler(obj, cxn);
+        ind_core_flow_delete_strict_handler(obj, cxn);
         break;
 
     case OF_PORT_STATS_REQUEST:
-        rv = ind_core_port_stats_request_handler(obj, cxn);
+        ind_core_port_stats_request_handler(obj, cxn);
         break;
 
     case OF_GET_CONFIG_REQUEST:
-        rv = ind_core_get_config_request_handler(obj, cxn);
+        ind_core_get_config_request_handler(obj, cxn);
         break;
 
     case OF_SET_CONFIG:
-        rv = ind_core_set_config_handler(obj, cxn);
+        ind_core_set_config_handler(obj, cxn);
         break;
 
     case OF_FLOW_STATS_REQUEST:
-        rv = ind_core_flow_stats_request_handler(obj, cxn);
+        ind_core_flow_stats_request_handler(obj, cxn);
         break;
 
     case OF_AGGREGATE_STATS_REQUEST:
-        rv = ind_core_aggregate_stats_request_handler(obj, cxn);
+        ind_core_aggregate_stats_request_handler(obj, cxn);
         break;
 
     case OF_TABLE_STATS_REQUEST:
-        rv = ind_core_table_stats_request_handler(obj, cxn);
+        ind_core_table_stats_request_handler(obj, cxn);
         break;
 
     case OF_DESC_STATS_REQUEST:
-        rv = ind_core_desc_stats_request_handler(obj, cxn);
+        ind_core_desc_stats_request_handler(obj, cxn);
         break;
 
     case OF_PORT_DESC_STATS_REQUEST:
-        rv = ind_core_port_desc_stats_request_handler(obj, cxn);
+        ind_core_port_desc_stats_request_handler(obj, cxn);
         break;
 
     case OF_FEATURES_REQUEST:
-        rv = ind_core_features_request_handler(obj, cxn);
-        break;
-
-    case OF_ECHO_REPLY: /* Handled by cxn_instance for now */
-        rv = ind_core_echo_reply_handler(obj, cxn);
+        ind_core_features_request_handler(obj, cxn);
         break;
 
     case OF_EXPERIMENTER:
-        rv = ind_core_experimenter_handler(obj, cxn);
+        ind_core_experimenter_handler(obj, cxn);
         break;
 
     case OF_PORT_MOD:
-        rv = ind_core_port_mod_handler(obj, cxn);
+        ind_core_port_mod_handler(obj, cxn);
         break;
 
     case OF_QUEUE_GET_CONFIG_REQUEST:
-        rv = ind_core_queue_get_config_request_handler(obj, cxn);
+        ind_core_queue_get_config_request_handler(obj, cxn);
         break;
 
     case OF_QUEUE_STATS_REQUEST:
-        rv = ind_core_queue_stats_request_handler(obj, cxn);
+        ind_core_queue_stats_request_handler(obj, cxn);
         break;
 
     /****************************************************************
      * Group messages
      ****************************************************************/
 
-    case OF_GROUP_MOD:
-        rv = ind_core_group_mod_handler(obj, cxn);
+    case OF_GROUP_ADD:
+        ind_core_group_add_handler(obj, cxn);
+        break;
+
+    case OF_GROUP_MODIFY:
+        ind_core_group_modify_handler(obj, cxn);
+        break;
+
+    case OF_GROUP_DELETE:
+        ind_core_group_delete_handler(obj, cxn);
         break;
 
     case OF_GROUP_STATS_REQUEST:
-        rv = ind_core_group_stats_request_handler(obj, cxn);
+        ind_core_group_stats_request_handler(obj, cxn);
         break;
 
     case OF_GROUP_DESC_STATS_REQUEST:
-        rv = ind_core_group_desc_stats_request_handler(obj, cxn);
+        ind_core_group_desc_stats_request_handler(obj, cxn);
         break;
 
     case OF_GROUP_FEATURES_STATS_REQUEST:
-        rv = ind_core_group_features_stats_request_handler(obj, cxn);
+        ind_core_group_features_stats_request_handler(obj, cxn);
+        break;
+
+#ifdef OFDPA_FIXUP
+    /****************************************************************
+     * Meter messages
+     ****************************************************************/
+
+    case OF_METER_ADD:
+        ind_core_meter_add_handler(obj, cxn);
+        break;
+
+    case OF_METER_MODIFY:
+        ind_core_meter_modify_handler(obj, cxn);
+        break;
+
+    case OF_METER_DELETE:
+        ind_core_meter_delete_handler(obj, cxn);
+        break;
+
+#endif
+    /****************************************************************
+     * Gentable messages
+     ****************************************************************/
+
+    case OF_BSN_GENTABLE_ENTRY_ADD:
+        ind_core_bsn_gentable_entry_add_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_ENTRY_DELETE:
+        ind_core_bsn_gentable_entry_delete_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_CLEAR_REQUEST:
+        ind_core_bsn_gentable_clear_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_SET_BUCKETS_SIZE:
+        ind_core_bsn_gentable_set_buckets_size_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_ENTRY_STATS_REQUEST:
+        ind_core_bsn_gentable_entry_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_ENTRY_DESC_STATS_REQUEST:
+        ind_core_bsn_gentable_entry_desc_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_DESC_STATS_REQUEST:
+        ind_core_bsn_gentable_desc_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_STATS_REQUEST:
+        ind_core_bsn_gentable_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GENTABLE_BUCKET_STATS_REQUEST:
+        ind_core_bsn_gentable_bucket_stats_request_handler(obj, cxn);
         break;
 
     /****************************************************************
@@ -340,15 +401,35 @@ indigo_core_receive_controller_message(indigo_cxn_id_t cxn, of_object_t *obj)
      ****************************************************************/
 
     case OF_BSN_SET_IP_MASK:
-        rv = ind_core_bsn_set_ip_mask_handler(obj, cxn);
+        ind_core_bsn_set_ip_mask_handler(obj, cxn);
         break;
 
     case OF_BSN_GET_IP_MASK_REQUEST:
-        rv = ind_core_bsn_get_ip_mask_request_handler(obj, cxn);
+        ind_core_bsn_get_ip_mask_request_handler(obj, cxn);
         break;
 
     case OF_BSN_HYBRID_GET_REQUEST:
-        rv = ind_core_bsn_hybrid_get_request_handler(obj, cxn);
+        ind_core_bsn_hybrid_get_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_GET_SWITCH_PIPELINE_REQUEST:
+        ind_core_bsn_sw_pipeline_get_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_SET_SWITCH_PIPELINE_REQUEST:
+        ind_core_bsn_sw_pipeline_set_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_SWITCH_PIPELINE_STATS_REQUEST:
+        ind_core_bsn_sw_pipeline_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_VLAN_COUNTER_STATS_REQUEST:
+        ind_core_bsn_vlan_counter_stats_request_handler(obj, cxn);
+        break;
+
+    case OF_BSN_PORT_COUNTER_STATS_REQUEST:
+        ind_core_bsn_port_counter_stats_request_handler(obj, cxn);
         break;
 
     /* These all use the experimenter handler */
@@ -364,23 +445,22 @@ indigo_core_receive_controller_message(indigo_cxn_id_t cxn, of_object_t *obj)
     case OF_BSN_BW_CLEAR_DATA_REQUEST:
     case OF_BSN_BW_ENABLE_GET_REQUEST:
     case OF_BSN_BW_ENABLE_SET_REQUEST:
-        rv = ind_core_experimenter_handler(obj, cxn);
+        ind_core_experimenter_handler(obj, cxn);
         break;
 
     /****************************************************************
      * These are not yet implemented
      ****************************************************************/
-
-#if NOT_YET
-
     case OF_TABLE_MOD:
-        rv = ind_core_table_mod_handler(obj, cxn);
-        break;
-
+      ind_core_unhandled_message(obj, cxn);
+      break;
     case OF_EXPERIMENTER_STATS_REQUEST:
-        rv = ind_core_experimenter_stats_request_handler(obj, cxn);
-        break;
-#endif
+    #ifdef OFDPA_FIXUP
+      ind_core_experimenter_stats_request_handler(obj, cxn);
+    #else
+      ind_core_unhandled_message(obj, cxn);
+    #endif
+      break;
 
     /****************************************************************
      * These will never be handled by a switch
@@ -404,18 +484,24 @@ indigo_core_receive_controller_message(indigo_cxn_id_t cxn, of_object_t *obj)
     case OF_QUEUE_STATS_REPLY:
     case OF_ROLE_REPLY:
     case OF_TABLE_STATS_REPLY:
-        rv = ind_core_unhandled_message(obj, cxn);
+        ind_core_unhandled_message(obj, cxn);
+        break;
+
+    /* These are implemented in OFConnectionManager */
+    case OF_HELLO:
+    case OF_ECHO_REQUEST:
+    case OF_ECHO_REPLY:
+    case OF_BARRIER_REQUEST:
+    case OF_NICIRA_CONTROLLER_ROLE_REQUEST:
+        LOG_ERROR("Expected OFConnectionManager to handle %s",
+                  of_object_id_str[obj->object_id]);
+        ind_core_unhandled_message(obj, cxn);
         break;
 
     default:
-        LOG_ERROR("Unhandled message type %d\n", obj->object_id);
-        rv = ind_core_unhandled_message(obj, cxn);
+        ind_core_unhandled_message(obj, cxn);
         break;
     }
-
-    LOG_TRACE("Handled msg %p with rv %d", obj, rv);
-
-    return rv;
 }
 
 static of_dpid_t ind_core_dpid = OFSTATEMANAGER_CONFIG_DPID_DEFAULT;
@@ -425,11 +511,11 @@ indigo_error_t
 indigo_core_dpid_set(of_dpid_t dpid)
 {
     if (ind_core_dpid != dpid) {
-        LOG_INFO("Changing switch DPID\n");
+        LOG_INFO("Changing switch DPID to %016llx", dpid);
         INDIGO_MEM_COPY(&ind_core_dpid, &dpid, sizeof(ind_core_dpid));
         ind_cxn_reset(IND_CXN_RESET_ALL);
     } else {
-        LOG_VERBOSE("Switch DPID set called but unchanged\n");
+        LOG_VERBOSE("Switch DPID set called but unchanged");
     }
 
     return INDIGO_ERROR_NONE;
@@ -485,11 +571,18 @@ ind_core_init(ind_core_config_t *config)
     ft_config.flow_id_bucket_count = config->max_flowtable_entries;
 
     if ((ind_core_ft = ft_create(&ft_config)) == NULL) {
-        LOG_ERROR("Unable to allocate flow table\n");
+        LOG_ERROR("Unable to allocate flow table");
         return INDIGO_ERROR_RESOURCE;
     }
 
     ind_core_connection_count = 0;
+
+    ind_core_group_init();
+#ifdef OFDPA_FIXUP
+    ind_core_meter_init();
+#endif
+
+    ind_core_test_gentable_init();
 
     ind_core_init_done = 1;
 
@@ -508,19 +601,29 @@ ind_core_init(ind_core_config_t *config)
  */
 
 void
-ind_core_flow_entry_delete(ft_entry_t *entry, indigo_fi_flow_removed_t reason,
-                           indigo_cxn_id_t cxn_id)
+ind_core_flow_entry_delete(ft_entry_t *entry, indigo_fi_flow_removed_t reason)
 {
     indigo_error_t rv;
-    indigo_fi_flow_stats_t flow_stats;
+    indigo_fi_flow_stats_t flow_stats = {
+        .flow_id = entry->id,
+        .duration_ns = 0,
+        .packets = -1,
+        .bytes = -1,
+    };
 
     LOG_TRACE("Removing flow " INDIGO_FLOW_ID_PRINTF_FORMAT,
               INDIGO_FLOW_ID_PRINTF_ARG(entry->id));
 
-    rv = indigo_fwd_flow_delete(entry->id, &flow_stats);
+    ind_core_table_t *table = ind_core_table_get(entry->table_id);
+    if (table != NULL) {
+        rv = table->ops->entry_delete(table->priv, entry->priv, &flow_stats);
+    } else {
+        rv = indigo_fwd_flow_delete(entry->id, &flow_stats);
+    }
+
     if (rv != INDIGO_ERROR_NONE) {
-        LOG_ERROR("Error deleting flow, id " INDIGO_FLOW_ID_PRINTF_FORMAT,
-                  INDIGO_FLOW_ID_PRINTF_ARG(entry->id));
+        LOG_ERROR("Error deleting flow " INDIGO_FLOW_ID_PRINTF_FORMAT ": %s",
+                  INDIGO_FLOW_ID_PRINTF_ARG(entry->id), indigo_strerror(rv));
         /* Ignoring failure */
     }
 
@@ -536,30 +639,15 @@ process_flow_removal(ft_entry_t *entry,
                      indigo_fi_flow_stats_t *final_stats,
                      indigo_fi_flow_removed_t reason)
 {
-    indigo_error_t rv;
-
     if (entry->flags & OF_FLOW_MOD_FLAG_SEND_FLOW_REM) {
         /* See OF spec 1.0.1, section 3.5, page 6 */
         if (reason != INDIGO_FLOW_REMOVED_OVERWRITE) {
-            if (final_stats != NULL) {
-                INDIGO_ASSERT(final_stats->flow_id == entry->id);
-                entry->packets = final_stats->packets;
-                entry->bytes = final_stats->bytes;
-            } else {
-                entry->packets = (uint64_t)-1;
-                entry->bytes = (uint64_t)-1;
-            }
-
-            send_flow_removed_message(entry, reason);
+            send_flow_removed_message(entry, reason, final_stats);
         }
     }
 
-    rv = ft_delete(ind_core_ft, entry);
-    if (rv != INDIGO_ERROR_NONE) {
-        LOG_ERROR("Error deleting flow from state mgr. id: "
-                  INDIGO_FLOW_ID_PRINTF_FORMAT,
-                  INDIGO_FLOW_ID_PRINTF_ARG(entry->id));
-    }
+    ft_delete(ind_core_ft, entry);
+
     LOG_TRACE("Flow table now has %d entries",
               FT_STATUS(ind_core_ft)->current_count);
 }
@@ -611,14 +699,14 @@ ind_core_enable_set(int enable)
         LOG_INFO("Enabling OF state mgr");
         if (CORE_EXPIRES_FLOWS(&ind_core_config)) {
             ind_soc_timer_event_register_with_priority(
-                flow_expiration_timer, NULL,
+                ind_core_expiration_timer, NULL,
                 ind_core_config.stats_check_ms, -10);
         }
         ind_core_module_enabled = 1;
     } else if (!enable && ind_core_module_enabled) {
         LOG_INFO("Disabling OF state mgr");
         if (CORE_EXPIRES_FLOWS(&ind_core_config)) {
-            ind_soc_timer_event_unregister(flow_expiration_timer, NULL);
+            ind_soc_timer_event_unregister(ind_core_expiration_timer, NULL);
         }
         ind_core_module_enabled = 0;
     } else {
@@ -655,6 +743,8 @@ ind_core_finish(void)
     }
 
     ft_destroy(ind_core_ft);
+
+    ind_core_test_gentable_finish();
 
     ind_core_init_done = 0;
 
@@ -882,129 +972,19 @@ indigo_core_connection_count_notify(int new_count)
 void
 indigo_core_port_status_update(of_port_status_t *of_port_status)
 {
-    int rv;
-
     /*
      * Special case: We allow this call to pass thru even if not enabled.
      */
 
     LOG_TRACE("OF state mgr port status update");
 
-    rv = indigo_cxn_send_controller_message(INDIGO_CXN_ID_UNSPECIFIED,
-                                            of_port_status);
-
-    /* Don't log error if controller is not connected */
-    if (rv != INDIGO_ERROR_NONE && rv != INDIGO_ERROR_NOT_READY) {
-        LOG_ERROR("Error sending port status message to controller");
-    }
-}
-
-
-/**
- * Send an error message to a controller
- * @param version The version to use for the msg
- * @param cxn_id Controller to receive msg
- * @param xid The transaction ID to use for the message
- * @param type Type of error message
- * @param code Code of error message for this type
- * @param bad_obj If not NULL, convert to octets and use for data
- * @param octets If not NULL use this for the data
- *
- * Note that bad_obj has precendence over octets; if bad_obj is not NULL
- * then octets is ignored.
- *
- */
-
-int
-ind_core_send_error_msg(of_version_t version, indigo_cxn_id_t cxn_id,
-                        uint32_t xid, uint16_t type, uint16_t code,
-                        of_object_t *bad_obj, of_octets_t *octets)
-{
-    of_octets_t obj_octets;
-
-    if (!ind_core_module_enabled) {
-        return INDIGO_ERROR_INIT;
-    }
-
-    if (bad_obj != NULL) {
-        obj_octets.data = OF_OBJECT_BUFFER_INDEX(bad_obj, 0);
-        obj_octets.bytes = bad_obj->length;
-        octets = &obj_octets;
-    }
-
-    return indigo_cxn_send_error_msg(version, cxn_id, xid, type, code, octets);
-}
-
-/**
- * Timer operation to expire flows.
- *
- * Calls indigo_fwd_flow_stats_get for each flow in the table. The expiration
- * is done in flow_expiration_timer_cb when the reply is received.
- *
- * Ignore this call if the module is not enabled.
- */
-static void
-flow_expiration_timer(void *cookie)
-{
-    ft_entry_t *entry;
-    list_links_t *cur, *next;
-    indigo_time_t current_time = INDIGO_CURRENT_TIME;
-
-    if (!ind_core_module_enabled) {
+    if (ind_core_port_status_notify(of_port_status) == INDIGO_CORE_LISTENER_RESULT_DROP) {
+        LOG_TRACE("Listener dropped port status update");
+        of_object_delete(of_port_status);
         return;
     }
 
-    FT_ITER(ind_core_ft, entry, cur, next) {
-        indigo_error_t rv;
-        indigo_fi_flow_stats_t flow_stats;
-
-        if (entry->hard_timeout > 0) {
-            uint32_t delta;
-            delta = INDIGO_TIME_DIFF_ms(entry->insert_time,
-                                        current_time) / 1000;
-            if (delta >= entry->hard_timeout) {
-                LOG_TRACE("Hard TO (%d): " INDIGO_FLOW_ID_PRINTF_FORMAT,
-                          entry->hard_timeout,
-                          INDIGO_FLOW_ID_PRINTF_ARG(entry->id));
-                ind_core_flow_entry_delete(entry, INDIGO_FLOW_REMOVED_HARD_TIMEOUT,
-                                           INDIGO_CXN_ID_UNSPECIFIED);
-                continue;
-            }
-        }
-
-        /* Update local copy of counters */
-        /* Only used currently for idle timeouts */
-        if (entry->idle_timeout > 0) {
-            rv = indigo_fwd_flow_stats_get(entry->id, &flow_stats);
-            if (rv != INDIGO_ERROR_NONE) {
-                LOG_ERROR("Failed to get stats for flow "INDIGO_FLOW_ID_PRINTF_FORMAT": %d",
-                          entry->id, rv);
-                continue;
-            }
-
-            if (entry->packets != flow_stats.packets) {
-                entry->packets = flow_stats.packets;
-                entry->last_counter_change = current_time;
-            }
-            if (entry->bytes != flow_stats.bytes) {
-                entry->bytes = flow_stats.bytes;
-                entry->last_counter_change = current_time;
-            }
-        }
-
-        if (entry->idle_timeout > 0) {
-            uint32_t delta;
-            delta = INDIGO_TIME_DIFF_ms(entry->last_counter_change,
-                                        current_time) / 1000;
-            if (delta >= entry->idle_timeout) {
-                LOG_TRACE("Idle TO (%d): " INDIGO_FLOW_ID_PRINTF_FORMAT,
-                          entry->idle_timeout, INDIGO_FLOW_ID_PRINTF_ARG(entry->id));
-                ind_core_flow_entry_delete(entry, INDIGO_FLOW_REMOVED_IDLE_TIMEOUT,
-                                           INDIGO_CXN_ID_UNSPECIFIED);
-                continue;
-            }
-        }
-    }
+    indigo_cxn_send_async_message(of_port_status);
 }
 
 void
@@ -1022,8 +1002,6 @@ ind_core_ft_dump(aim_pvs_t* pvs)
         aim_printf(pvs, "priority: %hu\n", entry->priority);
         aim_printf(pvs, "flags: %hu\n", entry->flags);
         aim_printf(pvs, "table_id: %hhu\n", entry->table_id);
-        aim_printf(pvs, "packets: %"PRIu64"\n", entry->packets);
-        aim_printf(pvs, "bytes: %"PRIu64"\n", entry->bytes);
 
         if (entry->match.version == OF_VERSION_1_0) {
             int rv;
@@ -1120,6 +1098,26 @@ indigo_core_stats_get(uint32_t *total_flows,
     ind_core_packet_outs = 0;
 }
 
+
+/**
+ * Duplicate a LOXI object and set up tracking
+ *
+ * Assumes the connection ID is valid, which it will be if called from a
+ * message handler.
+ *
+ * This function does not return NULL.
+ */
+
+of_object_t *
+ind_core_dup_tracking(of_object_t *obj, indigo_cxn_id_t cxn_id)
+{
+    of_object_t *new_obj = of_object_dup(obj);
+    AIM_TRUE_OR_DIE(new_obj != NULL);
+    indigo_error_t rv = ind_cxn_message_track_setup(cxn_id, new_obj);
+    AIM_TRUE_OR_DIE(rv == INDIGO_ERROR_NONE);
+    return new_obj;
+}
+
 #ifdef OFDPA_FIXUP
 /**
  * Handles flow expiry that occured in the datapath.
@@ -1136,8 +1134,7 @@ void ind_core_flow_expiry_handler(indigo_flow_id_t id,
     return;
   }
 
-  ind_core_flow_entry_delete(entry, reason,
-                             INDIGO_CXN_ID_UNSPECIFIED);
+  ind_core_flow_entry_delete(entry, reason);
   return;
 }
 #endif

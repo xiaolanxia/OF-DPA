@@ -1,0 +1,75 @@
+       How to Install OF-DPA Binary
+       ----------------------------
+
+This document describes how to install OF-DPA binary provided
+in this package on the supported SVKs. Refer the Release Notes
+for a list of supported SVKs.
+
+
+Linux kernel/rootfs Setup:
+==========================
+
+To load the Linux uImage via tftp, enter following commands
+at => prompt:
+  Enter the following at => prompt.
+   1) setenv ipaddr xxx.xxx.xxx.xxx
+      Where xxx.xxx.xxx.xxx is the IP Address of board.
+
+   2) setenv serverip xxx.xxx.xxx.xxx
+      Where xxx.xxx.xxx.xxx is the IP Address of tftp server
+
+   3) setenv gatewayip xxx.xxx.xxx.xxx
+      Where xxx.xxx.xxx.xxx is the IP Address of gateway for access to the tftp server
+
+   4) saveenv
+   5) Now download the p2020_qcr_uImage from TFTP.
+	- tftp <load-address> <file-path>/p2020_qcr_uImage
+          Ex: tftp 0x01000000 p2020_qcr_uImage
+	- bootm <load-address>
+
+Once Linux starts, a login prompt will be displayed. Following username and
+password should be used to login:
+User: root
+Password: broadcom
+
+Downloading and running OF-DPA
+==============================
+
+* cd to target directory. To write to persistent flash storage, write to
+  /mnt/fastpath.
+
+* Download the SDK kernel modules and configuration files on the switch:
+  tftp -g -r <file_path>/linux-kernel-bde.ko <tftp_server_ip>
+  tftp -g -r <file_path>/linux-user-bde.ko <tftp_server_ip>
+
+* Download the OFDPA executables on the switch:
+  tftp -g -r <file_path>/librpc_client.so.1 <tftp_server_ip>
+  tftp -g -r <file_path>/ofdpa <tftp_server_ip>
+  chmod 755 ofdpa
+
+* Install RPC library
+  # mv librpc_client.so.1 /lib
+  # cd /lib
+  # ln -sf librpc_client.so.1 librpc_client.so
+
+  Note that /lib is not persistent. To install the library persistently,
+  create /mnt/fastpath/usr/lib and put the file in /mnt/fastpath/usr/lib.
+
+  # mkdir -p /mnt/fastpath/usr/lib
+  # mv librpc_client.so.1 /mnt/fastpath/usr/lib
+  # cd /mnt/fastpath/usr/lib
+  # ln -sf librpc_client.so.1 librpc_client.so
+
+* cd to target directory and start OFDPA executable as a background process:
+  #./ofdpa &
+
+
+Downloading and running example Client Applications
+==================================================
+* Change to the target directory and execute following
+  tftp -g -r <file_path>/client_xxxx <tftp_server_ip>
+
+  chmod 755 client_*
+
+* All the client programs can be started from the linux shell as any standard
+  linux application. Use '--help' option to display supported options.

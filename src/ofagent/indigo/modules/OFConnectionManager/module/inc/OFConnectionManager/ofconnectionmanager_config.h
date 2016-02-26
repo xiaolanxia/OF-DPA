@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -117,6 +117,16 @@
 
 #ifndef OFCONNECTIONMANAGER_CONFIG_ECHO_OPTIMIZATION
 #define OFCONNECTIONMANAGER_CONFIG_ECHO_OPTIMIZATION 0
+#endif
+
+/**
+ * OFCONNECTIONMANAGER_CONFIG_OF_VERSION
+ *
+ * OpenFlow version to be advertised in HELLO message */
+
+
+#ifndef OFCONNECTIONMANAGER_CONFIG_OF_VERSION
+#define OFCONNECTIONMANAGER_CONFIG_OF_VERSION OF_VERSION_1_0
 #endif
 
 

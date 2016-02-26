@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -38,6 +38,8 @@
  * @param priority The priority, from the original add
  * @param idle_timeout The idle_timeout, from the original add
  * @param hard_timeout The hard_timeout, from the original add
+ * @param flags The flags, from the original add
+ * @param priv Opaque data returned by the entry_create operation
  * @param cookie The cookie, from the original or as updated
  * @param effects The actions or instructions from the add or as updated.
  * See below.
@@ -70,6 +72,7 @@ typedef struct ft_entry_s {
     uint16_t idle_timeout;
     uint16_t hard_timeout;
     uint16_t flags;
+    void *priv;
 
     /* Modifiable thru API calls */
     uint64_t cookie;
@@ -81,8 +84,6 @@ typedef struct ft_entry_s {
     /* Updated by implementation */
     uint8_t table_id;
     indigo_time_t insert_time;
-    uint64_t packets;
-    uint64_t bytes;
     indigo_time_t last_counter_change;
 
     /* For linked list maintance */
@@ -90,6 +91,7 @@ typedef struct ft_entry_s {
     list_links_t strict_match_links;  /* Search by strict match */
     list_links_t flow_id_links;    /* Search by flow id */
     list_links_t cookie_links;     /* Search by cookie */
+    list_links_t expiration_links; /* Expiration list entry */
     list_head_t iterators;         /* List of ft_iterator_t objects
                                       pointing to this entry */
 } ft_entry_t;

@@ -24,6 +24,14 @@
 #  loci public includes are defined here
 #
 ###############################################################################
-loci_INCLUDES := -I $(dir $(lastword $(MAKEFILE_LIST)))inc
-loci_INTERNAL_INCLUDES := -I $(dir $(lastword $(MAKEFILE_LIST)))src
+LOCI := $(SUBMODULE_LOXIGEN_ARTIFACTS)/loci
 
+loci_INCLUDES := -I $(LOCI)/inc
+loci_INTERNAL_INCLUDES := -I $(LOCI)/src
+ifndef DEBUG
+loci_CFLAGS := -Os
+endif
+
+LIBRARY := loci
+loci_SUBDIR := $(LOCI)/src
+include $(BUILDER)/lib.mk

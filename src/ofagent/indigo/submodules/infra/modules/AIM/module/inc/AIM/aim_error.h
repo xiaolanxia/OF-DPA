@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -28,6 +28,12 @@
 
 #include <AIM/aim_config.h>
 #include <AIM/aim_valist.h>
+
+#ifdef __GNUC__
+#define NORETURN_ATTR __attribute__((__noreturn__))
+#else
+#define NORETURN_ATTR
+#endif
 
 /* <auto.start.enum(aim_error).header> */
 /** aim_error */
@@ -70,10 +76,12 @@ extern aim_map_si_t aim_error_desc_map[];
 void aim_die(const char* function,
              const char* file,
              int line,
-             const char* fmt, ...);
+             const char* fmt, ...) NORETURN_ATTR;
 
 /** This macro should usually be used */
 #define AIM_DIE(...)                                            \
     aim_die(__func__, __FILE__, __LINE__,  __VA_ARGS__ );
+
+#undef NORETURN_ATTR
 
 #endif /* __AIM_ERROR_H__ */

@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -80,6 +80,11 @@ ofconnectionmanager_config_settings_t ofconnectionmanager_config_settings[] =
     { __ofconnectionmanager_config_STRINGIFY_NAME(OFCONNECTIONMANAGER_CONFIG_ECHO_OPTIMIZATION), __ofconnectionmanager_config_STRINGIFY_VALUE(OFCONNECTIONMANAGER_CONFIG_ECHO_OPTIMIZATION) },
 #else
 { OFCONNECTIONMANAGER_CONFIG_ECHO_OPTIMIZATION(__ofconnectionmanager_config_STRINGIFY_NAME), "__undefined__" },
+#endif
+#ifdef OFCONNECTIONMANAGER_CONFIG_OF_VERSION
+    { __ofconnectionmanager_config_STRINGIFY_NAME(OFCONNECTIONMANAGER_CONFIG_OF_VERSION), __ofconnectionmanager_config_STRINGIFY_VALUE(OFCONNECTIONMANAGER_CONFIG_OF_VERSION) },
+#else
+{ OFCONNECTIONMANAGER_CONFIG_OF_VERSION(__ofconnectionmanager_config_STRINGIFY_NAME), "__undefined__" },
 #endif
     { NULL, NULL }
 };
@@ -208,7 +213,7 @@ parse_controller(struct controller *controller, cJSON *root)
     controller->config.listen = listen;
     controller->config.cxn_priority = prio;
     controller->config.local = 0;
-    controller->config.version = OF_VERSION_1_3;
+    controller->config.version = OFCONNECTIONMANAGER_CONFIG_OF_VERSION;
 
     return INDIGO_ERROR_NONE;
 }

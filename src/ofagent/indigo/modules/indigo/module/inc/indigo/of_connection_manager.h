@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -313,8 +313,6 @@ extern indigo_error_t indigo_cxn_status_change_register(
 extern indigo_error_t indigo_cxn_status_change_unregister(
     indigo_cxn_status_change_f handler, void *cookie);
 
-extern void indigo_cxn_outstanding_op_incr(indigo_cxn_id_t cxn_id, int incr);
-
 /****************************************************************
  *
  * The OF Connection to OF State Manager Interface
@@ -329,30 +327,42 @@ extern void indigo_cxn_outstanding_op_incr(indigo_cxn_id_t cxn_id, int incr);
  *
  * Provided by connection manager, required by state manager
  *
- * Connection Manager takes responsibility for obj even if an error
- * is returned.  This means that if you send the object to more than
- * one connection you must first duplicate it.
+ * Connection Manager takes responsibility for obj. This means that if you
+ * send the object to more than one connection you must first duplicate it.
  */
 
-extern indigo_error_t indigo_cxn_send_controller_message(
+extern void indigo_cxn_send_controller_message(
     indigo_cxn_id_t cxn_id,
     of_object_t *obj);
 
 /**
+ * Send an async OpenFlow message to multiple controller connections
+ *
+ * @param obj The LOCI object representing the message
+ *
+ * Provided by connection manager, required by state manager
+ *
+ * The connections sent to are determined by the message version
+ * and the connections' async config.
+ *
+ * Connection Manager takes responsibility for obj.
+ */
+
+extern void indigo_cxn_send_async_message(of_object_t *obj);
+
+/**
  * Send an error message to a controller connection
- * @param version The version to use for the msg
+ *
  * @param cxn_id Controller to receive msg
- * @param xid The transaction ID to use for the message
+ * @param orig Message this error is in response to
  * @param type Type of error message
  * @param code Code of error message for this type
- * @param octets If not NULL use this for the data
  *
- * If version is invalid, uses the connection's configured version
+ * The version, XID, and header data are taken from orig.
  */
-extern indigo_error_t
-indigo_cxn_send_error_msg(of_version_t version, indigo_cxn_id_t cxn_id,
-                          uint32_t xid, uint16_t type, uint16_t code,
-                          of_octets_t *octets);
+extern void
+indigo_cxn_send_error_reply(indigo_cxn_id_t cxn_id, of_object_t *orig,
+                            uint16_t type, uint16_t code);
 
 
 /**
@@ -389,7 +399,7 @@ void indigo_cxn_list_destroy(indigo_cxn_info_t* list);
 
 /**
  * @brief Get OpenFlow version of the controller connection for async messages.
- * @param [out] of_version OpenFlow version 
+ * @param [out] of_version OpenFlow version
  */
 extern indigo_error_t
 indigo_cxn_get_async_version(of_version_t* of_version);

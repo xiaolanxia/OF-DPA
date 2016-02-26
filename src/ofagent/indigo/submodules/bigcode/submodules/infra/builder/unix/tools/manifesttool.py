@@ -1,14 +1,14 @@
 #!/usr/bin/python
 ################################################################
 #
-#        Copyright 2013, Big Switch Networks, Inc. 
-# 
+#        Copyright 2013, Big Switch Networks, Inc.
+#
 # Licensed under the Eclipse Public License, Version 1.0 (the
 # "License"); you may not use this file except in compliance
 # with the License. You may obtain a copy of the License at
-# 
+#
 #        http://www.eclipse.org/legal/epl-v10.html
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -78,9 +78,10 @@ class ManifestBase(object):
                         if m:
                             if root.startswith("./"):
                                 root = root.replace("./", "")
-                            s += self.module(m.group('modname'), root)
                             self.modules[m.group('modname')] = root
 
+        for modname, root in sorted(self.modules.items()):
+            s += self.module(modname, root)
 
         s += self.denitsection()
         s += "\n"
@@ -112,7 +113,7 @@ class MakeManifest(ManifestBase):
 
     def denitsection(self):
         return "\n\nALL_MODULES := $(ALL_MODULES) %s" % (
-            " ".join(self.modules.keys()))
+            " ".join(sorted(self.modules.keys())))
 
 class EnvManifest(ManifestBase):
     """Generates the Manifest.sh file containing environment location variables."""

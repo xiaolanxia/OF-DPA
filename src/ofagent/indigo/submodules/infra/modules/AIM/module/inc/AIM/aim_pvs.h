@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -54,6 +54,9 @@ typedef int (*aim_vprint_f)(aim_pvs_t* pvs, const char* fmt, va_list vargs);
 struct aim_pvs_s {
     /** AIM object. */
     aim_object_t object;
+
+    /** Description */
+    char* description;
 
     /**
      * This is the vector that will eventually receive the output for
@@ -145,6 +148,13 @@ void aim_pvs_destroy(aim_pvs_t* pvs);
  * @returns -1 If unknown.
  */
 int aim_pvs_isatty(aim_pvs_t* pvs);
+
+/**
+ * @brief Get a string description of the given pvs.
+ * @param pvs The object to query.
+ * @returns A string describing the pvs. Do not modify or free.
+ */
+const char* aim_pvs_desc_get(aim_pvs_t* pvs);
 
 #endif /* __AIM_PVS_H__ */
 /*@}*/

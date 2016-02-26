@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -32,6 +32,11 @@
 #include <AIM/aim_error.h>
 #include <AIM/aim_bitmap.h>
 #include <AIM/aim_pvs_buffer.h>
+#include <AIM/aim_memory.h>
+
+#if AIM_CONFIG_INCLUDE_POSIX == 1
+#include <string.h>
+#endif
 
 /* FIXME */
 #define AIM_STATUS_E_ARG -1
@@ -136,7 +141,7 @@ aim_datatype_unregister(char c, const char* type)
         dt = DT_ENTRY(ll);
         if(aim_datatype_equals__(dt, c, type)) {
             list_remove(&((__aim_datatype_t*)dt)->links);
-            AIM_FREE(dt);
+            aim_free(dt);
             break;
         }
     }
@@ -347,7 +352,7 @@ aim_datatype_fs__idata__(aim_datatype_context_t* dtc, const char* arg,
     }
     AIM_MEMCPY(data, _data, _size);
     *size = _size;
-    AIM_FREE(_data);
+    aim_free(_data);
     return AIM_STATUS_OK;
 }
 
@@ -698,6 +703,30 @@ aim_datatype_ts__vlan__(aim_datatype_context_t* dtc, aim_va_list_t* vargs,
     return AIM_STATUS_OK;
 }
 
+static int
+aim_datatype_ts__errno__(aim_datatype_context_t* dtc, aim_va_list_t* vargs,
+                         const char** rv)
+{
+    int e = va_arg(vargs->val, int);
+    *rv = aim_strdup(strerror(e));
+    AIM_REFERENCE(dtc);
+    return AIM_STATUS_OK;
+}
+
+static int
+aim_datatype_ts__signal__(aim_datatype_context_t* dtc, aim_va_list_t* vargs,
+                          const char** rv)
+{
+    int e = va_arg(vargs->val, int);
+#if AIM_CONFIG_INCLUDE_POSIX == 1
+    *rv = aim_strdup(strsignal(e));
+#else
+    *rv = aim_fstrdup("%d", e);
+#endif
+    AIM_REFERENCE(dtc);
+    return AIM_STATUS_OK;
+}
+
 int
 aim_datatypes_init()
 {
@@ -746,6 +775,16 @@ aim_datatypes_init()
     aim_datatype_register(0, "vlan", "VLAN Id",
                           aim_datatype_fs__vlan__,
                           aim_datatype_ts__vlan__,
+                          NULL);
+
+    aim_datatype_register(0, "errno", "System error number.",
+                          NULL,
+                          aim_datatype_ts__errno__,
+                          NULL);
+
+    aim_datatype_register(0, "signal", "System signal number.",
+                          NULL,
+                          aim_datatype_ts__signal__,
                           NULL);
 
    return 0;

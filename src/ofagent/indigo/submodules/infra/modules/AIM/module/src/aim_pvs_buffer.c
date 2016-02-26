@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -28,6 +28,7 @@
 #include <AIM/aim_pvs_buffer.h>
 #include <AIM/aim_utils.h>
 #include <AIM/aim_string.h>
+#include <AIM/aim_memory.h>
 #include "aim_util.h"
 
 AIM_OBJECT_ID_DEFINE(aim_buffer_pvs_obj, "aim_buffer_pvs");
@@ -107,6 +108,7 @@ aim_pvs_buffer_create(void)
     AIM_OBJECT_INIT(rv, aim_buffer_pvs_obj, 0, NULL, aim_pvs_buffer_destroy__);
     rv->pvs.enabled = 1;
     rv->pvs.vprintf = aim_pvs_buffer_vprintf__;
+    rv->pvs.description = "{buffer}";
     return (aim_pvs_t*)rv;
 }
 
@@ -190,8 +192,8 @@ aim_pvs_buffer_reset(aim_pvs_t* _pvs)
 
     while(pvs->list) {
         aim_pvs_buffer_entry_t* next = pvs->list->next;
-        AIM_FREE((void*)pvs->list->data);
-        AIM_FREE(pvs->list);
+        aim_free((void*)pvs->list->data);
+        aim_free(pvs->list);
         pvs->list = next;
     }
 }
@@ -199,8 +201,9 @@ aim_pvs_buffer_reset(aim_pvs_t* _pvs)
 void
 aim_pvs_buffer_destroy__(aim_object_t* obj)
 {
-    aim_pvs_buffer_reset((aim_pvs_t*)obj);
-    AIM_FREE(obj);
+    aim_pvs_t* pvs = (aim_pvs_t*)obj;
+    aim_pvs_buffer_reset(pvs);
+    aim_free(obj);
 }
 
 

@@ -1,6 +1,6 @@
 OFDPA Source Files
 ==================
-The directories under the src directory contain source files that define the 
+The directories under the src directory contain source files that define the
 OF-DPA API and examples illustrating how to use the API.  The contents of these
 directories are described below:
 

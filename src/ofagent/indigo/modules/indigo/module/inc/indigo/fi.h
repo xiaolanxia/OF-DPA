@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -66,5 +66,39 @@ typedef struct indigo_fi_flow_stats {
     uint64_t packets;         /**< Number of packets in flow  */
     uint64_t bytes;           /**< Number of bytes in flow  */
 } indigo_fi_flow_stats_t;
+
+/**
+ * @brief VLAN statistics counters
+ *
+ * Should be set to -1 if not supported.
+ */
+
+typedef struct indigo_fi_vlan_stats {
+    uint64_t rx_bytes;
+    uint64_t rx_packets;
+    uint64_t tx_bytes;
+    uint64_t tx_packets;
+} indigo_fi_vlan_stats_t;
+
+/**
+ * @brief Port statistics counters
+ *
+ * Should be set to -1 if not supported.
+ */
+
+typedef struct indigo_fi_port_stats {
+    uint64_t rx_bytes;
+    uint64_t rx_packets_unicast;
+    uint64_t rx_packets_broadcast;
+    uint64_t rx_packets_multicast;
+    uint64_t rx_dropped;
+    uint64_t rx_errors;
+    uint64_t tx_bytes;
+    uint64_t tx_packets_unicast;
+    uint64_t tx_packets_broadcast;
+    uint64_t tx_packets_multicast;
+    uint64_t tx_dropped;
+    uint64_t tx_errors;
+} indigo_fi_port_stats_t;
 
 #endif /* _INDIGO_FI_H_ */

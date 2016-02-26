@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -91,10 +91,9 @@ setup_cxn(void)
 
 static int got_cxn_msg;
 
-static indigo_error_t
+static void
 cxn_msg_rx(indigo_cxn_id_t cxn_id, of_object_t *obj)
 {
-    indigo_error_t rv = INDIGO_ERROR_NONE;
     printf("Got msg from %d: type %d\n", cxn_id, obj->object_id);
 
     /* Just respond to echo request */
@@ -109,7 +108,6 @@ cxn_msg_rx(indigo_cxn_id_t cxn_id, of_object_t *obj)
         printf("Respond to echo with xid 0x%x\n", xid);
         if ((reply = of_echo_reply_new(echo->version)) == NULL) {
             printf("Could not allocate echo response obj\n");
-            rv = (indigo_error_t)OF_ERROR_RESOURCE;
             goto done;
         }
 
@@ -120,30 +118,22 @@ cxn_msg_rx(indigo_cxn_id_t cxn_id, of_object_t *obj)
 
         of_echo_reply_xid_set(reply, xid);
 
-        if ((rv = indigo_cxn_send_controller_message(cxn_id,
-                                                     (of_object_t *)reply))
-            < 0) {
-            printf("Error %d sending echo response\n", rv);
-            goto done;
-        }
+        indigo_cxn_send_controller_message(cxn_id, reply);
     }
 
  done:
-    of_object_delete(obj);
     got_cxn_msg = 1;
-
-    return rv;
 }
 
 /*
  * Implement Forwarding function
  */
 
-indigo_error_t
+void
 indigo_core_receive_controller_message(indigo_cxn_id_t cxn_id,
                                        of_object_t *obj)
 {
-    return cxn_msg_rx(cxn_id, obj);
+    cxn_msg_rx(cxn_id, obj);
 }
 
 int main(int argc, char* argv[])

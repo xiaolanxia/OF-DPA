@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -89,12 +89,10 @@ typedef void (*aim_object_dtor)(aim_object_t*);
 #define AIM_OBJECT_INIT(_object, _id, _subtype, _cookie, _dtor) \
     do {                                                        \
         aim_object_t* _op_ = (aim_object_t*)(_object);          \
-        if(_op_) {                                              \
-            _op_->id = _id;                                     \
-            _op_->subtype = _subtype;                           \
-            _op_->cookie = _cookie;                             \
-            _op_->destructor = _dtor;                           \
-        }                                                       \
+        _op_->id = _id;                                         \
+        _op_->subtype = _subtype;                               \
+        _op_->cookie = _cookie;                                 \
+        _op_->destructor = _dtor;                               \
     } while(0)
 
 

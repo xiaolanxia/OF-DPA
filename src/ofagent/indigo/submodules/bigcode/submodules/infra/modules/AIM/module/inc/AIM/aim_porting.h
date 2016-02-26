@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -54,6 +54,26 @@
     #endif
 #endif
 
+#ifndef AIM_CALLOC
+    #if defined(GLOBAL_CALLOC)
+        #define AIM_CALLOC GLOBAL_CALLOC
+    #elif AIM_CONFIG_PORTING_STDLIB == 1
+        #define AIM_CALLOC calloc
+    #else
+        #error The macro AIM_CALLOC is required but cannot be defined.
+    #endif
+#endif
+
+#ifndef AIM_REALLOC
+    #if defined(GLOBAL_REALLOC)
+        #define AIM_REALLOC GLOBAL_REALLOC
+    #elif AIM_CONFIG_PORTING_STDLIB == 1
+        #define AIM_REALLOC realloc
+    #else
+        #error The macro AIM_REALLOC is required but cannot be defined.
+    #endif
+#endif
+
 #ifndef AIM_FREE
     #if defined(GLOBAL_FREE)
         #define AIM_FREE GLOBAL_FREE
@@ -81,6 +101,16 @@
         #define AIM_MEMCPY memcpy
     #else
         #error The macro AIM_MEMCPY is required but cannot be defined.
+    #endif
+#endif
+
+#ifndef AIM_MEMCMP
+    #if defined(GLOBAL_MEMCMP)
+        #define AIM_MEMCMP GLOBAL_MEMCMP
+    #elif AIM_CONFIG_PORTING_STDLIB == 1
+        #define AIM_MEMCMP memcmp
+    #else
+        #error The macro AIM_MEMCMP is required but cannot be defined.
     #endif
 #endif
 

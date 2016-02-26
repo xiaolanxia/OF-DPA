@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -17,13 +17,6 @@
  *
  ****************************************************************/
 
-/******************************************************************************
- *
- * module/src/biglist_int.h
- *
- * Common Biglist internal definitions.
- *
- *****************************************************************************/
 #ifndef __BIGLIST_INT_H__
 #define __BIGLIST_INT_H__
 

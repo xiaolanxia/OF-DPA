@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -78,6 +78,11 @@ socketmanager_config_settings_t socketmanager_config_settings[] =
     { __socketmanager_config_STRINGIFY_NAME(SOCKETMANAGER_CONFIG_TIMESLICE_MS), __socketmanager_config_STRINGIFY_VALUE(SOCKETMANAGER_CONFIG_TIMESLICE_MS) },
 #else
 { SOCKETMANAGER_CONFIG_TIMESLICE_MS(__socketmanager_config_STRINGIFY_NAME), "__undefined__" },
+#endif
+#ifdef SOCKETMANAGER_CONFIG_MAX_TIMERS
+    { __socketmanager_config_STRINGIFY_NAME(SOCKETMANAGER_CONFIG_MAX_TIMERS), __socketmanager_config_STRINGIFY_VALUE(SOCKETMANAGER_CONFIG_MAX_TIMERS) },
+#else
+{ SOCKETMANAGER_CONFIG_MAX_TIMERS(__socketmanager_config_STRINGIFY_NAME), "__undefined__" },
 #endif
     { NULL, NULL }
 };

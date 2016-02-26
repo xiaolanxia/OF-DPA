@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -114,6 +114,18 @@ extern indigo_error_t indigo_fwd_flow_stats_get(
     indigo_fi_flow_stats_t *flow_stats);
 
 /**
+ * @brief Flow hit status
+ * @param flow_id The ID of the flow whose hit status is to be retrieved
+ * @param [out] hit_status True if entry hit since last time API was called
+ *
+ * Get the hit status of an existing flow.
+ */
+
+extern indigo_error_t indigo_fwd_flow_hit_status_get(
+    indigo_cookie_t flow_id,
+    bool *hit_status);
+
+/**
  * @brief Table stats
  * @param table_stats_request The LOXI request
  * @param [out] table_stats_reply The LOXI reply
@@ -126,6 +138,21 @@ extern indigo_error_t indigo_fwd_flow_stats_get(
 extern indigo_error_t indigo_fwd_table_stats_get(
     of_table_stats_request_t *table_stats_request,
     of_table_stats_reply_t **table_stats_reply);
+
+/**
+ * @brief VLAN stats
+ * @param vlan_vid The ID of the VLAN whose stats are to be retrieved
+ * @param [out] vlan_stats Statistics for the VLAN
+ *
+ * Only supported counters need to be set. The rest will default to -1.
+ *
+ * If the VLAN is invalid or no stats are available, don't set any of the
+ * counters.
+ */
+
+void indigo_fwd_vlan_stats_get(
+    uint16_t vlan_vid,
+    indigo_fi_vlan_stats_t *vlan_stats);
 
 /**
  * @brief Packet out operation
@@ -201,6 +228,75 @@ void indigo_fwd_group_delete(uint32_t id);
  * Forwarding should set the packet_count, byte_count, and bucket_stats fields.
  */
 void indigo_fwd_group_stats_get(uint32_t id, of_group_stats_entry_t *entry);
+
+#ifdef OFDPA_FIXUP
+/**
+ * Meter management
+ *
+ * These interfaces largely map to the OpenFlow meter-mod message, but with a
+ * few differences for easier Forwarding implementation:
+ *
+ *  - Delete of OF_METER_ALL is turned into a series of deletes of single meter.
+ *  - Modify with a changed flag is turned into a delete and add.
+ */
+
+/**
+ * @brief Add a meter
+ * @param id Meter ID
+ * @param flag OpenFlow meter flag
+ * @param meters LOCI meter_band list
+ */
+indigo_error_t indigo_fwd_meter_add(uint32_t id, uint16_t flag, of_list_meter_band_t *meters);
+
+/**
+ * @brief Modify an existing meter
+ * @param id Meter ID
+ * @param flag OpenFlow meter flag
+ * @param meters LOCI meter_band list
+ */
+indigo_error_t indigo_fwd_meter_modify(uint32_t id, uint16_t flag, of_list_meter_band_t *meters);
+
+/**
+ * @brief Delete an existing meter
+ * @param id Meter ID
+ */
+indigo_error_t indigo_fwd_meter_delete(uint32_t id);
+#endif
+
+/**
+ * Switch pipeline management
+ *
+ * The switch pipeline defines the flow of packets through the functional
+ * units of the switch, and the set of tables consulted by these units.
+ *
+ * The standard method of configuring the switch pipeline is the OF 1.3
+ * table-features multipart message. However, this message is not sufficently
+ * expressive to represent the flow of packets through a realistic switch.
+ */
+
+/**
+ * @brief Get existing switch pipeline
+ * @param pipeline Pipeline string describing switch operational mode
+ */
+void indigo_fwd_pipeline_get(of_desc_str_t pipeline);
+
+/**
+ * @brief Set switch pipeline
+ * @param pipeline Pipeline string describing switch operational mode
+ */
+indigo_error_t indigo_fwd_pipeline_set(of_desc_str_t pipeline);
+
+/**
+ * @brief Get a list of supported switch pipelines
+ * @param pipelines List of pipelines
+ * @param num_pipelines Number of pipelines
+ *
+ * Forwarding should allocate memory using aim_malloc() for the pipeline
+ * list and set num_pipelines to the number of elements.
+ *
+ * Caller should use aim_free() to free memory.
+ */
+void indigo_fwd_pipeline_stats_get(of_desc_str_t **pipelines, int *num_pipelines);
 
 /****************************************************************
  * Function provided for port manager

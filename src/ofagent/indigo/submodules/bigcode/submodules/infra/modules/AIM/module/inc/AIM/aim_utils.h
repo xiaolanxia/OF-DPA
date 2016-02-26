@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -50,6 +50,11 @@
 #define AIM_VAR_PCAST_SAFE(_type, _varname, _condition, _value) \
     _type _varname = AIM_PCAST_SAFE(_type, _condition, _value)
 
+
+/**
+ * Clear a structure.
+ */
+#define AIM_ZERO(_struct) memset(&_struct, 0, sizeof(_struct))
 
 /**
  * Unused expression or variable.
@@ -167,35 +172,6 @@ extern int aim_modules_init(void);
  * Printing an empty string that may be NULL.
  */
 #define AIM_STRING_EMPTY_IF_NULL(_str) ( (_str) ? (_str) : "")
-
-/**
- * @brief Zero'ed memory alloc.
- * @param size Size.
- */
-void* aim_zmalloc(int size);
-
-/**
- * Free memory allocated by aim_zmalloc()
- * @param data The memory to free.
- */
-void aim_free(void* data);
-
-
-/**
- * @brief Duplicate memory.
- * @param src Source memory.
- * @param size Size.
- * @returns a new copy of the data.
- */
-void* aim_memdup(void* src, int size);
-
-/**
- * @brief Duplicate memory.
- * @param src Source memory;
- * @param src_size Size to copy.
- * @param alloc_size Size to allocate.
- */
-void* aim_memndup(void* src, int src_size, int alloc_size);
 
 
 /**

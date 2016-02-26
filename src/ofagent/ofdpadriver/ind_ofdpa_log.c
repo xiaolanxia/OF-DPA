@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* (C) Copyright Broadcom Corporation 2013-2014
+* (C) Copyright Broadcom Corporation 2013-2016
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 * @end
 *
 **********************************************************************/
-#include <ind_ofdpa_log.h>
+#include "ind_ofdpa_log.h"
 
 AIM_LOG_STRUCT_DEFINE(
                       AIM_LOG_OPTIONS_DEFAULT,

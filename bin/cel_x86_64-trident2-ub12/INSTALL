@@ -1,0 +1,76 @@
+       How to Install OF-DPA
+       ---------------------
+
+This document describes how to install the OF-DPA software provided in
+this package on the Celestica Redstone XP switch.
+
+Pre-requisites:  The switch must have ICOS installed via ONIE.
+    Must log in as user admin, password is broadcom.
+    All commands run as root user.
+    The OF-DPA service cannot be run at the same time as the ICOS service.
+
+Downloading and running OF-DPA
+==============================
+
+* download the OF-DPA .deb package
+    admin@localhost:~$ sudo bash
+    root@localhost:~# tftp 10.27.64.25
+    tftp> bin
+    tftp> get ofdpa/im/ofdpa-redstone-xp_0.E.2.0.0_amd64.deb
+    tftp> quit
+
+* Install the OF-DPA .deb package
+    root@localhost:~# dpkg -i ofdpa-redstone-xp_0.E.2.0.0_amd64.deb
+
+    Note:  It may be necessary to run the following command before installing
+           OF-DPA because sometimes the ONIE install leaves some packages
+           in a half-configured state:
+
+           dpkg --configure -a
+
+* The switch is now ready to run one of the services. Either the
+  ofdpa or the ofagentapp service can be run.  If the ICOS service
+  is running, it must be stopped first.
+
+    root@localhost:~# stop icos
+
+
+    root@localhost:~# start ofdpa
+    root@localhost:~# status ofdpa
+    root@localhost:~# stop ofdpa
+
+  or
+
+    root@localhost:~# start ofagentapp
+    root@localhost:~# status ofagentapp
+    root@localhost:~# stop ofagentapp
+
+* Configuring command line parameters for OF-DPA (or ofagentapp):
+    Edit /etc/default/ofdpa (or /etc/default/ofagentapp) and set the
+    OFARGS parameter For example, to set the debugging level to 2:
+    OFARGS=--debuglvl=2
+
+* Log files can be found here:
+    /var/log/upstart/ofdpa.log
+    /var/log/upstart/ofagentapp.log
+
+
+Running example Client Applications
+===================================================
+* Client applications are installed in /broadcom/ofdpa
+
+* All the client programs can be started from the linux shell as any standard
+  linux application. Use '--help' option to display supported options.
+
+Building Client Applications
+============================
+
+Source code for OF-DPA client applications may be built on the switch using standard
+GNU development tools. The client applications are dynamically linked with the OF-DPA
+shared library. Commands to compile and link one of the example client applications
+are shown below. Substitute the appropriate file names to build other client applications.
+
+ # ! Compile step
+ # gcc -c -o client_acl.o -I../include client_acl.c
+ # ! Link step
+ # gcc -o client_acl -Wl,-Bstatic client_acl.o -Wl,-Bdynamic -lc -lrpc_client

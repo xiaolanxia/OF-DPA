@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -28,6 +28,7 @@
 #include <AIM/aim_pvs.h>
 #include <AIM/aim_string.h>
 #include <AIM/aim_pvs_buffer.h>
+#include <AIM/aim_memory.h>
 #include <inttypes.h>
 #include <stddef.h>
 
@@ -186,7 +187,6 @@ aim_vprintf(aim_pvs_t* pvs, const char* fmt, va_list _vargs)
     int count = 0;
     aim_va_list_t vargs;
 
-    dst = fmt_;
     va_copy(vargs.val, _vargs);
 
 #define NEXT_TOKEN()                            \
@@ -217,7 +217,7 @@ aim_vprintf(aim_pvs_t* pvs, const char* fmt, va_list _vargs)
                 if(*src == 0) {
                     /* Malformed */
                     count += aim_pvs_printf(pvs, fmt_, "%BADFORMAT");
-                    AIM_FREE(fmt_);
+                    aim_free(fmt_);
                     return count;
                 }
                 else {
@@ -242,7 +242,7 @@ aim_vprintf(aim_pvs_t* pvs, const char* fmt, va_list _vargs)
                         dtc.epvs = pvs;
                         dt->to_str(&dtc, &vargs, &rv);
                         count += aim_pvs_printf(pvs, fmt_, rv);
-                        AIM_FREE((char*)rv);
+                        aim_free((char*)rv);
                     }
                 }
             }
@@ -268,7 +268,7 @@ aim_vprintf(aim_pvs_t* pvs, const char* fmt, va_list _vargs)
     if(dst != fmt_) {
         count += aim_pvs_vprintf(pvs, fmt_, vargs.val);
     }
-    AIM_FREE(fmt_);
+    aim_free(fmt_);
     return count;
 }
 
@@ -293,7 +293,7 @@ aim_vsnprintf(char* dst, int size, const char* fmt, va_list vargs)
     rv = aim_pvs_buffer_size(dstpvs);
     data = aim_pvs_buffer_get(dstpvs);
     AIM_MEMCPY(dst, data, size);
-    AIM_FREE(data);
+    aim_free(data);
     return rv;
 }
 

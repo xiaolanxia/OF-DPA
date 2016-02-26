@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -49,7 +49,7 @@ int aim_main(int argc, char* argv[])
         if(strcmp(join, "This is a complete sentence.")) {
             printf("fail: join='%s'\n", join);
         }
-        AIM_FREE(join);
+        aim_free(join);
     }
 
     for(i = 0; i < argc; i++) {
@@ -140,6 +140,45 @@ int aim_main(int argc, char* argv[])
         }
 
         AIM_LOG_MSG("%{aim_error}", AIM_ERROR_PARAM);
+    }
+
+    /* Test integer power of 2 utilities */
+    {
+       assert(!aim_is_pow2_u32(0));
+       assert(aim_log2_u32(0) == 0);
+
+       assert(aim_is_pow2_u32(1));
+       assert(aim_log2_u32(1) == 0);
+
+       assert(aim_is_pow2_u32(2));
+       assert(aim_log2_u32(2) == 1);
+
+       assert(!aim_is_pow2_u32(3));
+       assert(aim_log2_u32(3) == 1);
+
+       assert(aim_is_pow2_u32(4));
+       assert(aim_log2_u32(4) == 2);
+
+       assert(!aim_is_pow2_u32(5));
+       assert(aim_log2_u32(5) == 2);
+
+       assert(!aim_is_pow2_u32(6));
+       assert(aim_log2_u32(6) == 2);
+
+       assert(!aim_is_pow2_u32(7));
+       assert(aim_log2_u32(7) == 2);
+
+       assert(aim_is_pow2_u32(8));
+       assert(aim_log2_u32(8) == 3);
+
+       assert(!aim_is_pow2_u32(2147483647));
+       assert(aim_log2_u32(2147483647) == 30);
+
+       assert(aim_is_pow2_u32(2147483648));
+       assert(aim_log2_u32(2147483648) == 31);
+
+       assert(!aim_is_pow2_u32(4294967295));
+       assert(aim_log2_u32(4294967295) == 31);
     }
 
     return 0;

@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -93,7 +93,6 @@ typedef struct connection_s {
 
     uint64_t packet_ins;
 
-    biglist_t *outstanding_ops; /* Used only if OF_OBJECT_TRACKING is on */
     int outstanding_op_cnt; /* Number of outstanding operations */
     struct {
         unsigned char pendingf;           /* Barrier reply pending flag */
@@ -114,7 +113,9 @@ typedef struct connection_s {
 
     /* To detect object staleness */
     uint32_t generation_id;
-    
+
+    /* Used by the bsn_time_request message handler */
+    indigo_time_t hello_time;
 } connection_t;
 
 

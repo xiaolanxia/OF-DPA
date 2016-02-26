@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -99,8 +99,8 @@ typedef struct ft_config_s {
  * @param deletes Number of delete operation called
  * @param hard_expires Number of hard timeouts
  * @param idle_expires Number of idle timeouts
- * @param updates Number of calls that modified a flow entry including
- * effects_modify and clear_counters.
+ * @param updates Number of calls that modified a flow entry, e.g.
+ * effects_modify.
  * @param table_full_errors Number of adds that failed due to no space
  * in the table.
  * @param forwarding_add_errors Number of adds that failed due to a
@@ -216,19 +216,7 @@ indigo_error_t ft_add(ft_instance_t ft,
  * @param entry Pointer to the entry to be removed
  */
 
-indigo_error_t ft_delete(ft_instance_t ft,
-                         ft_entry_t *entry);
-
-/**
- * Remove a flow entry from the table indicated by flow ID
- * @param ft The flow table handle
- * @param id Flow ID of the entry to remove
- *
- * Just looks up the entry and calls ft_delete.
- */
-
-indigo_error_t ft_delete_id(ft_instance_t ft,
-                            indigo_flow_id_t id);
+void ft_delete(ft_instance_t ft, ft_entry_t *entry);
 
 /**
  * Query the flow table (strict match) and return the first match if found
@@ -265,18 +253,6 @@ indigo_error_t
 ft_entry_modify_effects(ft_instance_t instance,
                         ft_entry_t *entry,
                         of_flow_modify_t *flow_mod);
-
-/**
- * Clear the counters associated with a specific entry in the table
- * @param entry The entry to update
- * @param packets (out) If non-NULL, store current packet count here
- * @param bytes (out) If non-NULL, store current byte count here
- *
- * The output parameters may be NULL in which case they are ignored.
- */
-
-indigo_error_t
-ft_entry_clear_counters(ft_entry_t *entry, uint64_t *packets, uint64_t *bytes);
 
 /*
  * Spawn a task that iterates over the flowtable

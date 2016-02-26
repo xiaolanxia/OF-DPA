@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* (C) Copyright Broadcom Corporation 2003-2014
+* (C) Copyright Broadcom Corporation 2003-2016
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -55,6 +55,9 @@ int main(int argc, char *argv[])
   time_t currentTime;
   int32_t elapsedSeconds;
 
+  ofdpaGroupEntry_t l2IfaceGroup;
+  ofdpaGroupBucketEntry_t bucket;
+
   ofdpaFlowEntry_t flow;
   ofdpaFlowEvent_t flowEventData;
 
@@ -75,6 +78,16 @@ int main(int argc, char *argv[])
   {
     return rc;
   }
+  rc = ofdpaClientEventSockBind();
+  if (rc != OFDPA_E_NONE)
+  {
+    return rc;
+  }
+  rc = ofdpaClientPktSockBind();
+  if (rc != OFDPA_E_NONE)
+  {
+    return rc;
+  }
 
   if (wait >= 0)
   {
@@ -86,30 +99,67 @@ int main(int argc, char *argv[])
   else
     printf("\nclient_event: waiting indefinitely for events\n");
 
-  /* first clear out out any existing flows in the VLAN table */
+  /* first clear out out any existing flows in the Bridging table */
   memset(&flow, 0, sizeof(flow));
-  flow.tableId = OFDPA_FLOW_TABLE_ID_VLAN;
+  flow.tableId = OFDPA_FLOW_TABLE_ID_BRIDGING;
 
   /* wait if OFDPA process not ready for RPC */
   while (ofdpaFlowNextGet(&flow, &flow) == OFDPA_E_RPC)
   {
+    printf("\nclient_event: waiting for OF-DPA RPC server to respond\n");
     usleep(1000000);
   }
+
   do
   {
-    ofdpaFlowDelete(&flow);
+    (void)ofdpaFlowDelete(&flow);
   } while (ofdpaFlowNextGet(&flow, &flow) == OFDPA_E_NONE);
 
   /* build and add some flows with various hard timeout values */
+
+  /* bridging entries need an L2 Interface group */
+  memset(&l2IfaceGroup, 0, sizeof(l2IfaceGroup));
+  ofdpaGroupTypeSet(&l2IfaceGroup.groupId, OFDPA_GROUP_ENTRY_TYPE_L2_INTERFACE);
+  ofdpaGroupVlanSet(&l2IfaceGroup.groupId, 10);
+  ofdpaGroupPortIdSet(&l2IfaceGroup.groupId, 1);
+
+  (void)ofdpaGroupDelete(l2IfaceGroup.groupId);
+
+  rc = ofdpaGroupAdd(&l2IfaceGroup);
+  if (rc != OFDPA_E_NONE)
+  {
+    printf("\nError creating required L2 Interface Group entry. rc = %d", rc);
+    return(3);
+  }
+
+  memset(&bucket, 0, sizeof(bucket));
+  bucket.groupId = l2IfaceGroup.groupId;
+  bucket.bucketIndex = 1;
+  bucket.bucketData.l2Interface.outputPort = 1;
+  rc = ofdpaGroupBucketEntryAdd(&bucket);
+  if (rc != OFDPA_E_NONE)
+  {
+    printf("\nError creating required L2 Interface Group entry bucket. rc = %d", rc);
+    return(3);
+  }
+
   memset(&flow, 0, sizeof(flow));
-  flow.tableId = OFDPA_FLOW_TABLE_ID_VLAN;
-  flow.flowData.vlanFlowEntry.gotoTableId = OFDPA_FLOW_TABLE_ID_TERMINATION_MAC;
-  flow.flowData.vlanFlowEntry.match_criteria.inPort = 1;
-  flow.flowData.vlanFlowEntry.match_criteria.vlanId = 100 | OFDPA_VID_PRESENT;
-  flow.flowData.vlanFlowEntry.match_criteria.vlanIdMask = OFDPA_VID_PRESENT | OFDPA_VID_EXACT_MASK;
+  flow.tableId = OFDPA_FLOW_TABLE_ID_BRIDGING;
+  flow.flowData.bridgingFlowEntry.gotoTableId = OFDPA_FLOW_TABLE_ID_ACL_POLICY;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMac.addr[5] = 0x01;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[0] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[1] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[2] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[3] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[4] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.destMacMask.addr[5] = 0xff;
+  flow.flowData.bridgingFlowEntry.match_criteria.vlanId = OFDPA_VID_PRESENT | 100;
+  flow.flowData.bridgingFlowEntry.match_criteria.vlanIdMask = OFDPA_VID_PRESENT | OFDPA_VID_EXACT_MASK;
+  flow.flowData.bridgingFlowEntry.groupID = l2IfaceGroup.groupId;
+
   flow.hard_time = 5;
 
-  if (ofdpaFlowAdd(&flow) != OFDPA_E_NONE)
+  if ((rc = ofdpaFlowAdd(&flow)) != OFDPA_E_NONE)
   {
     printf("client_event: ofdpaFlowAdd failed for first flow: rc = %d\n", rc);
     /* no sense in continuing if we cannot add the first test flow */
@@ -117,7 +167,7 @@ int main(int argc, char *argv[])
   }
 
   /* build up a second flow with a later hard time value */
-  flow.flowData.vlanFlowEntry.match_criteria.vlanId++;
+  flow.flowData.bridgingFlowEntry.match_criteria.vlanId++;
   flow.hard_time = 15;
   if (ofdpaFlowAdd(&flow) != OFDPA_E_NONE)
   {
@@ -126,7 +176,7 @@ int main(int argc, char *argv[])
   }
 
   /* build up a flow with a idle time value that expires before the second hard time flow */
-  flow.flowData.vlanFlowEntry.match_criteria.vlanId++;
+  flow.flowData.bridgingFlowEntry.match_criteria.vlanId++;
   flow.hard_time = 0;
   flow.idle_time = 10;
   if (ofdpaFlowAdd(&flow) != OFDPA_E_NONE)
@@ -138,7 +188,7 @@ int main(int argc, char *argv[])
   /* build up a flow with a idle time value AND a hard time value to see
      if we can get both event types valid for the same flow simultaneously
    */
-  flow.flowData.vlanFlowEntry.match_criteria.vlanId++;
+  flow.flowData.bridgingFlowEntry.match_criteria.vlanId++;
   flow.hard_time = 12;
   flow.idle_time = 12;
   if (ofdpaFlowAdd(&flow) != OFDPA_E_NONE)
@@ -154,7 +204,7 @@ int main(int argc, char *argv[])
   flow.hard_time = 20;
   for (i=0; i<10; i++)
   {
-    flow.flowData.vlanFlowEntry.match_criteria.vlanId++;
+    flow.flowData.bridgingFlowEntry.match_criteria.vlanId++;
     if (ofdpaFlowAdd(&flow) != OFDPA_E_NONE)
     {
       printf("client_event: ofdpaFlowAdd failed in flow add loop: rc = %d, i = %d\n", rc, i);
@@ -172,15 +222,14 @@ int main(int argc, char *argv[])
            elapsedSeconds);
 
     memset(&flowEventData, 0, sizeof(flowEventData));
-    flowEventData.flowMatch.tableId = OFDPA_FLOW_TABLE_ID_VLAN;
+    flowEventData.flowMatch.tableId = OFDPA_FLOW_TABLE_ID_BRIDGING;
 
     while (ofdpaFlowEventNextGet(&flowEventData) == OFDPA_E_NONE)
     {
       printf("client_event: retrieved aged flow: tableId = %d, eventMask = %x\n",
              flowEventData.flowMatch.tableId, flowEventData.eventMask);
-      printf("    flow data: inPort = %d, vlanId = %d\n",
-             flowEventData.flowMatch.flowData.vlanFlowEntry.match_criteria.inPort,
-             flowEventData.flowMatch.flowData.vlanFlowEntry.match_criteria.vlanId & OFDPA_VID_EXACT_MASK);
+      printf("    flow data: vlanId = %d\n",
+             flowEventData.flowMatch.flowData.bridgingFlowEntry.match_criteria.vlanId & OFDPA_VID_EXACT_MASK);
 
       if ((rc = ofdpaFlowDelete(&flowEventData.flowMatch)) != OFDPA_E_NONE)
         printf("client_event: ofdpaFlowDelete rc = %d\n", rc);
@@ -191,12 +240,15 @@ int main(int argc, char *argv[])
     memset(&portEventData, 0, sizeof(portEventData));
     while (ofdpaPortEventNextGet(&portEventData) == OFDPA_E_NONE)
     {
-      printf("client_event: retrieved port event: port no = %d, eventMask = 0x%x, state = %d\n",
-             portEventData.portNum, portEventData.eventMask, portEventData.state);
+      printf("client_event: retrieved port event: port no = %d [0x%x], eventMask = 0x%x, state = %d\n",
+             portEventData.portNum, portEventData.portNum, portEventData.eventMask, portEventData.state);
     }
   }
 
   printf("client_event: ofdpaEventReceive rc = %d\n", rc);
+
+  /* clean up group entry */
+  (void)ofdpaGroupDelete(l2IfaceGroup.groupId);
 
   return 0;
 }

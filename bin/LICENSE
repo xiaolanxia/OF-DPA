@@ -13,9 +13,9 @@ entity, and an individual is entering into this Agreement on your behalf, then
 you will be bound by this Agreement when that individual downloads the Software.
 When they do so, it will also constitute a representation by the individual that
 s/he is authorized to bind you as a party to this Agreement. If you do not agree
-to all of the terms of this Agreement, do not download the Software. 
+to all of the terms of this Agreement, do not download the Software.
 
-1. GRANT OF LICENSE. 
+1. GRANT OF LICENSE.
 
 Subject to the terms and conditions of this Agreement, BROADCOM grants You the
 following license: BROADCOM grants You a limited, revocable, non-exclusive,
@@ -25,7 +25,7 @@ Programs") that will be used in conjunction with, or will interface with, the
 Software and Broadcom proprietary integrated circuits, chips, chipsets, or
 modules described in the Documentation ("Broadcom Chips"); (ii) reproduce and
 distribute the Software, solely in object code form, incorporated into or
-integrated with Developer Programs solely for use with Broadcom Chips. 
+integrated with Developer Programs solely for use with Broadcom Chips.
 
 
 2. PROPRIETARY RIGHTS. The Software and the Documentation are proprietary
@@ -38,7 +38,7 @@ Developer Programs you may develop, except for any libraries, data or code
 included in the Developer Programs that are also included in the Software. You
 hereby covenant that you will not assert any claim that the Software or
 derivative works thereof created by or for BROADCOM infringe any intellectual
-property right owned or controlled by You. 
+property right owned or controlled by You.
 
 3. RESTRICTIONS. The Software is licensed, not sold. You may not rent, lease or
 sublicense the Software. You may not reverse engineer, decompile, or disassemble
@@ -59,7 +59,7 @@ Software or Documentation in violation of any applicable law or regulation,
 including but not limited to any regulatory agency. This Agreement shall
 automatically terminate upon your failure to comply with any of the terms of
 this Agreement. In such event, You will destroy all copies of the Software and
-its component parts. 
+its component parts.
 
 
 4. NO WARRANTY. THE SOFTWARE IS OFFERED "AS IS," AND BROADCOM PROVIDES AND
@@ -71,7 +71,7 @@ ANY UPGRADES TO OR DOCUMENTATION FOR THE SOFTWARE. WITHOUT LIMITATION OF THE
 ABOVE, BROADCOM GRANTS NO WARRANTY THAT THE SOFTWARE IS ERROR-FREE OR WILL
 OPERATE WITHOUT INTERRUPTION, AND GRANTS NO WARRANTY REGARDING ITS USE OR THE
 RESULTS THEREFROM INCLUDING, WITHOUT LIMITATION, ITS CORRECTNESS, ACCURACY, OR
-RELIABILITY. 
+RELIABILITY.
 
 5. NO LIABILITY FOR DAMAGES. TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT
 SHALL BROADCOM OR ANY OF ITS LICENSORS HAVE ANY LIABILITY FOR ANY DIRECT,
@@ -81,7 +81,7 @@ NEGLIGENCE) OR OTHERWISE, ARISING OUT OF THIS AGREEMENT OR USE, REPRODUCTION, OR
 DISTRIBUTION OF THE SOFTWARE, INCLUDING BUT NOT LIMITED TO LOSS OF DATA AND LOSS
 OF PROFITS, EVEN IF SUCH PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGES. THESE LIMITATIONS SHALL APPLY NOTWITHSTANDING ANY FAILURE OF ESSENTIAL
-PURPOSE OF ANY LIMITED REMEDYTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW. 
+PURPOSE OF ANY LIMITED REMEDYTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.
 
 6. INDEMNIFICATION. You will indemnify, defend and hold harmless BROADCOM and
 its employees, directors, representatives and agents ("Indemnified Parties") for
@@ -90,7 +90,7 @@ attorneys' fees, incurred by them in any third party claim, suit or proceeding
 based upon use or distribution of the Developer Programs or upon your breach of
 your obligations under this Agreement; provided that the Indemnified Parties
 give you written notice of any such claim, suit or proceeding within a
-reasonable time and control of the defense thereof. 
+reasonable time and control of the defense thereof.
 
 7. SUPPORT. Nothing in this Agreement shall obligate Broadcom to provide any
 support for the Software. Broadcom may, but shall be under no obligation to,
@@ -107,7 +107,7 @@ your customers or to end users with respect to the Software, derivative works,
 or Developer Programs.  You shall defend any claim against BROADCOM arising in
 connection with any such warranties, express, implied, statutory, or otherwise,
 and shall pay any settlements or damages awarded against BROADCOM that are based
-on any such warranties. 
+on any such warranties.
 
 8. CONFIDENTIALITY.  You acknowledge and agree that the Software, any
 documentation relating to the Software, constitute the confidential and
@@ -125,12 +125,12 @@ specific performance, are appropriate remedies to redress any breach or
 threatened breach of this Section 8, in addition to all other remedies available
 to BROADCOM. You will not directly or indirectly disclose or provide a copy of
 Software to any other infrastructure and/or networking silicon solution
-provider. 
+provider.
 
 9. TERMINATION. Broadcom may terminate this Agreement at any time if you breach
 this Agreement or any terms and conditions herein and you have failed to
 immediately cure such breach. Upon termination, you will immediately destroy or
-return all copies of the Software. 
+return all copies of the Software.
 
 10. U.S. GOVERNMENT RESTRICTED RIGHTS. The Software is a commercial product,
 developed at private expense, and provided with restricted rights. Use,
@@ -152,7 +152,7 @@ the United States in accordance with the EAR. Diversion contrary to U.S. law is
 prohibited. Notwithstanding other provisions of U.S. law, You acknowledge that
 transfer or re-export to any country, entity, or person subject to U.S.
 sanctions, a denial order, or identified in Country Group E, requires prior
-authorization from the U.S. Government.  
+authorization from the U.S. Government.
 
 11. MISCELLANEOUS. This Agreement shall constitute the final, binding and entire
 agreement of the parties, and supersedes all prior agreements or representations
@@ -182,93 +182,276 @@ language of this Agreement is English.
 
 
 Appendix A
-         
-Software 
+
+Software
 
 bin/ directory, excluding all the files set forth on Appendix B: Open Source
 Software
-         
+
 Appendix B
 
 Open Source Software
-         
-bin/gto-trident-brl20/ - Broadcom Trident Switch Verification Kits
 
-client_routing                    -> Covered by Apache 2.0
-client_srcmac_learn               -> Covered by Apache 2.0
-client_termmac                    -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop        -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop_member -> Covered by Apache 2.0
-client_tunnel_nexthop             -> Covered by Apache 2.0
-client_tunnel_port                -> Covered by Apache 2.0
-client_tunnel_port_tenant         -> Covered by Apache 2.0
-client_tunnel_tenant              -> Covered by Apache 2.0
-client_vlan                       -> Covered by Apache 2.0
-client_acl                        -> Covered by Apache 2.0
-client_bridging                   -> Covered by Apache 2.0
-client_cfg_purge                  -> Covered by Apache 2.0
-client_debugcomp                  -> Covered by Apache 2.0
-client_debuglvl                   -> Covered by Apache 2.0
-client_event                      -> Covered by Apache 2.0
-client_flowtable_dump             -> Covered by Apache 2.0
-client_group                      -> Covered by Apache 2.0
-client_ingress_port               -> Covered by Apache 2.0
-client_pkt_txrx                   -> Covered by Apache 2.0
-client_port                       -> Covered by Apache 2.0
+bin/gto-xgs5-fsl14/ - Broadcom XGS IV Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
 ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
 gto_uImage -> Covered by GPL
 
-bin/im-x86-trident-ub12/ - Interface Masters Niagara 2948-6XLM-OCP Modular
-Switch System
-
-client_routing                    -> Covered by Apache 2.0
-client_srcmac_learn               -> Covered by Apache 2.0
-client_termmac                    -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop        -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop_member -> Covered by Apache 2.0
-client_tunnel_nexthop             -> Covered by Apache 2.0
-client_tunnel_port                -> Covered by Apache 2.0
-client_tunnel_port_tenant         -> Covered by Apache 2.0
-client_tunnel_tenant              -> Covered by Apache 2.0
-client_vlan                       -> Covered by Apache 2.0
-client_acl                        -> Covered by Apache 2.0
-client_bridging                   -> Covered by Apache 2.0
-client_cfg_purge                  -> Covered by Apache 2.0
-client_debugcomp                  -> Covered by Apache 2.0
-client_debuglvl                   -> Covered by Apache 2.0
-client_event                      -> Covered by Apache 2.0
-client_flowtable_dump             -> Covered by Apache 2.0
-client_group                      -> Covered by Apache 2.0
-client_ingress_port               -> Covered by Apache 2.0
-client_pkt_txrx                   -> Covered by Apache 2.0
-client_port                       -> Covered by Apache 2.0
-ofagentapp                        -> The OpenFlow Agent part of this binary is covered by EPL 1.0
-boardkeeper_1.0_amd64.deb         -> Contains two sets of binaries: (i) Kernel Modules licensed under GPLv2, and (ii) User Space applications licensed under LGPL
-
-
-bin/ly2-trident-brl20/ - Quanta T3048-LY2 Ethernet Switch
-
-client_routing                    -> Covered by Apache 2.0
-client_srcmac_learn               -> Covered by Apache 2.0
-client_termmac                    -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop        -> Covered by Apache 2.0
-client_tunnel_ecmp_nexthop_member -> Covered by Apache 2.0
-client_tunnel_nexthop             -> Covered by Apache 2.0
-client_tunnel_port                -> Covered by Apache 2.0
-client_tunnel_port_tenant         -> Covered by Apache 2.0
-client_tunnel_tenant              -> Covered by Apache 2.0
-client_vlan                       -> Covered by Apache 2.0
-client_acl                        -> Covered by Apache 2.0
-client_bridging                   -> Covered by Apache 2.0
-client_cfg_purge                  -> Covered by Apache 2.0
-client_debugcomp                  -> Covered by Apache 2.0
-client_debuglvl                   -> Covered by Apache 2.0
-client_event                      -> Covered by Apache 2.0
-client_flowtable_dump             -> Covered by Apache 2.0
-client_group                      -> Covered by Apache 2.0
-client_ingress_port               -> Covered by Apache 2.0
-client_pkt_txrx                   -> Covered by Apache 2.0
-client_port                       -> Covered by Apache 2.0
+bin/cel_x86_64-trident2-ub12/ - Celestica RedstoneXP Ethernet Switch
+ofdpa-redstone-xp_0.2.0.0.1_amd64.deb   -> Contains the files as below:
+client_cfg_purge                        -> Covered by Apache 2.0
+client_debugcomp                        -> Covered by Apache 2.0
+client_debuglvl                         -> Covered by Apache 2.0
+client_event                            -> Covered by Apache 2.0
+client_flowtable_dump                   -> Covered by Apache 2.0
+client_grouptable_dump                  -> Covered by Apache 2.0
+client_oam_dump                         -> Covered by Apache 2.0
+client_port_table_dump                  -> Covered by Apache 2.0
+client_tunnel_dump                      -> Covered by Apache 2.0
+ofdpa_bridging.py                       -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                       -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py                  -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                      -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                    -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                        -> Covered by Apache 2.0
+ofdpa_routing.py                        -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py                   -> Covered by Apache 2.0
+ofdpa_vxlan.py                          -> Covered by Apache 2.0
 ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
-qcp2020_uImage -> Covered by GPL
 
+bin/as6700-trident2-fsl14/ - Accton AS6700-32x Ethernet Switch
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+p2041_ac_uImage -> Covered by GPL
+
+bin/iproc-helix4-brl36/ - Broadcom XGS IV Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+iproc_hx4_uImage -> Covered by GPL
+
+bin/iproc-hurricane2-brl36/ - Broadcom XGS IV Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+iproc_hr2_uImage -> Covered by GPL
+
+bin/iproc-katana2-brl36/ - Broadcom XGS V Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+iproc_kt2_uImage -> Covered by GPL
+
+bin/iproc-saber2-xldk/ - Broadcom XGS V Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+iproc_sb2_uImage -> Covered by GPL
+
+bin/ly2-trident-fsl14/ - Quanta LY2 Ethernet Switch
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+p2020_qc_uImage -> Covered by GPL
+
+bin/ly2r-trident-fsl14/ - Quanta LY2R Ethernet Switch
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+p2020_qcr_uImage -> Covered by GPL
+
+bin/ly8-x86_64-trident-ub12/ - Quanta LY8 Ethernet Switch
+ofdpa-ly8_0.2.0.0.1_amd64               -> Contains the files as below:
+client_cfg_purge                        -> Covered by Apache 2.0
+client_debugcomp                        -> Covered by Apache 2.0
+client_debuglvl                         -> Covered by Apache 2.0
+client_event                            -> Covered by Apache 2.0
+client_flowtable_dump                   -> Covered by Apache 2.0
+client_grouptable_dump                  -> Covered by Apache 2.0
+client_oam_dump                         -> Covered by Apache 2.0
+client_port_table_dump                  -> Covered by Apache 2.0
+client_tunnel_dump                      -> Covered by Apache 2.0
+ofdpa_bridging.py                       -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                       -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py                  -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                      -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                    -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                        -> Covered by Apache 2.0
+ofdpa_routing.py                        -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py                   -> Covered by Apache 2.0
+ofdpa_vxlan.py                          -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+
+bin/wrx-qumran-nll32/ - QumranMX Ethernet Switch
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+wrx_uImage -> Covered by GPL
+
+bin/wrx-tomahawk-nll32/ - Broadcom XGS V Switch Verification Kits
+client_cfg_purge                    -> Covered by Apache 2.0
+client_debugcomp                    -> Covered by Apache 2.0
+client_debuglvl                     -> Covered by Apache 2.0
+client_event                        -> Covered by Apache 2.0
+client_flowtable_dump               -> Covered by Apache 2.0
+client_grouptable_dump              -> Covered by Apache 2.0
+client_oam_dump                     -> Covered by Apache 2.0
+client_port_table_dump              -> Covered by Apache 2.0
+client_tunnel_dump                  -> Covered by Apache 2.0
+ofdpa_bridging.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr.py                   -> Covered by Apache 2.0
+ofdpa_mpls_lsr_ecmp.py              -> Covered by Apache 2.0
+ofdpa_mplsl3vpn.py                  -> Covered by Apache 2.0
+ofdpa_pktrx_setup.py                -> Covered by Apache 2.0
+ofdpa_pktrxtx.py                    -> Covered by Apache 2.0
+ofdpa_routing.py                    -> Covered by Apache 2.0
+ofdpa_srcmac_learn.py               -> Covered by Apache 2.0
+ofdpa_vxlan.py                      -> Covered by Apache 2.0
+ofagentapp -> The OpenFlow Agent part of this binary is covered by EPL 1.0
+wrx_uImage -> Covered by GPL

@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* (C) Copyright Broadcom Corporation 2013-2014
+* (C) Copyright Broadcom Corporation 2013-2016
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -30,36 +30,36 @@
 *
 **********************************************************************/
 
-#include <indigo/port_manager.h>
-#include <indigo/of_state_manager.h>
-#include <ind_ofdpa_util.h>
-#include <ind_ofdpa_log.h>
-#include <indigo/error.h>
-#include <loci/of_match.h>
-#include <loci/loci.h>
-#include <ofdpa_api.h>
 #include <linux/if_ether.h>
+#include "indigo/port_manager.h"
+#include "indigo/of_state_manager.h"
+#include "ind_ofdpa_util.h"
+#include "ind_ofdpa_log.h"
+#include "indigo/error.h"
+#include "loci/of_match.h"
+#include "loci/loci.h"
+#include "ofdpa_api.h"
 
 extern int ofagent_of_version;
 
-static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t req_of_port_num, 
-                                                uint32_t req_of_port_queue_id, 
+static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t req_of_port_num,
+                                                uint32_t req_of_port_queue_id,
                                                 of_list_queue_stats_entry_t *list);
 
 static indigo_error_t ind_ofdpa_port_stats_set(uint32_t port, of_list_port_stats_entry_t *list);
 
-static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_packet_queue, 
-                                                       of_port_no_t port, 
+static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_packet_queue,
+                                                       of_port_no_t port,
                                                        uint32_t queueId);
 
-static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_packet_queue, 
+static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_packet_queue,
                                                        uint32_t port, uint32_t queueId)
 {
   indigo_error_t err = INDIGO_ERROR_NONE;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   uint32_t minRate, maxRate;
   of_list_queue_prop_t of_list_queue_prop;
-  of_queue_prop_t of_queue_prop; 
+  of_queue_prop_t of_queue_prop;
   of_queue_prop_min_rate_t *min_rate;
   of_queue_prop_max_rate_t *max_rate;
 
@@ -68,13 +68,13 @@ static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_pac
 
   /* Set the queue id: id for the specific queue. */
   of_packet_queue_queue_id_set(of_packet_queue, queueId);
-    
+
   /* Set the port: Port this queue is attached to. */
   of_packet_queue_port_set(of_packet_queue, port);
 
   ofdpa_rv = ofdpaQueueRateGet(port, queueId, &minRate, &maxRate);
   if (ofdpa_rv != OFDPA_E_NONE)
-  { 
+  {
     LOG_ERROR("Failed to get port queue min and max rates. (ofdpa_rv = %d)", ofdpa_rv);
     err = (indigoConvertOfdpaRv(ofdpa_rv));
   }
@@ -99,7 +99,7 @@ static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_pac
 
 static indigo_error_t ind_ofdpa_port_stats_set(uint32_t port, of_list_port_stats_entry_t *list)
 {
-  OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE; 
+  OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   ofdpaPortStats_t portStats;
   of_port_stats_entry_t entry[1];
 
@@ -135,8 +135,8 @@ static indigo_error_t ind_ofdpa_port_stats_set(uint32_t port, of_list_port_stats
   return (indigoConvertOfdpaRv(ofdpa_rv));
 }
 
-static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t port, 
-                                                uint32_t req_of_port_queue_id, 
+static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t port,
+                                                uint32_t req_of_port_queue_id,
                                                 of_list_queue_stats_entry_t *list)
 {
   indigo_error_t err = INDIGO_ERROR_NONE;
@@ -148,16 +148,16 @@ static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t port,
   of_queue_stats_entry_t entry[1];
 
 
-  /* Check if the request if for all queues (OFPQ_ALL) */ 
+  /* Check if the request if for all queues (OFPQ_ALL) */
   if (req_of_port_queue_id == OF_QUEUE_ALL_BY_VERSION(list->version))
-  {   
+  {
     queueId = 0;
     all_queues = 1;
-  } 
+  }
   else
-  { 
+  {
     queueId = req_of_port_queue_id;
-  }  
+  }
 
   ofdpa_rv = ofdpaNumQueuesGet(port, &numQueues);
   if (ofdpa_rv != OFDPA_E_NONE)
@@ -168,7 +168,7 @@ static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t port,
 
   if (queueId >= numQueues)
   {
-    LOG_ERROR("Invalid queue Id (queueId = %d)", queueId); 
+    LOG_ERROR("Invalid queue Id (queueId = %d)", queueId);
     return INDIGO_ERROR_RANGE;
   }
 
@@ -208,18 +208,18 @@ static indigo_error_t ind_ofdpa_queue_stats_set(of_port_no_t port,
   return err;
 }
 
-/* Set the port features in LOCI structure 
- * Parameters:                             
- *    port          (input)   Port number 
+/* Set the port features in LOCI structure
+ * Parameters:
+ *    port          (input)   Port number
  *    of_port_desc  (output)  Port description LOCI object
  */
-static indigo_error_t ind_ofdpa_port_features_set(of_port_no_t port, 
+static indigo_error_t ind_ofdpa_port_features_set(of_port_no_t port,
                                                   of_port_desc_t *of_port_desc)
 {
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   ofdpaPortFeature_t  features;
 
-  ofdpa_rv = ofdpaPortFeatureGet(port, &features); 
+  ofdpa_rv = ofdpaPortFeatureGet(port, &features);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
     LOG_ERROR("Error getting port features");
@@ -238,9 +238,9 @@ static indigo_error_t ind_ofdpa_port_features_set(of_port_no_t port,
   return INDIGO_ERROR_NONE;
 }
 
-/* Set the port description in LOCI structure 
- * Parameters:                             
- *    port          (input)   Port number 
+/* Set the port description in LOCI structure
+ * Parameters:
+ *    port          (input)   Port number
  *    of_port_desc  (output)  Port description LOCI object
  */
 static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t *of_port_desc)
@@ -250,7 +250,7 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpaMacAddr_t mac;
   of_mac_addr_t of_mac;
   ofdpa_buffdesc nameDesc;
-  OFDPA_PORT_STATE_t  state = 0; 
+  OFDPA_PORT_STATE_t  state = 0;
   OFDPA_PORT_CONFIG_t config = 0;
   char buff[64];
   uint32_t speed;
@@ -264,9 +264,9 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpa_rv = ofdpaPortMacGet(port, &mac);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    LOG_INFO("Failed to get Port MAC. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port MAC. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
-  memcpy(&of_mac, &mac, sizeof(of_mac)); 
+  memcpy(&of_mac, &mac, sizeof(of_mac));
   of_port_desc_hw_addr_set(of_port_desc, of_mac);
 
   /* Port Name */
@@ -276,7 +276,7 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpa_rv = ofdpaPortNameGet(port, &nameDesc);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    LOG_INFO("Failed to get Port Name. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port Name. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
   of_port_desc_name_set(of_port_desc, nameDesc.pstart);
 
@@ -284,7 +284,7 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpa_rv = ofdpaPortConfigGet(port, &config);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    LOG_INFO("Failed to get Port Admin State. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port Admin State. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
   of_port_desc_config_set(of_port_desc, config);
 
@@ -292,23 +292,23 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpa_rv = ofdpaPortStateGet(port, &state);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    LOG_INFO("Failed to get Port State. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port State. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
   of_port_desc_state_set(of_port_desc, state);
 
 
-  /* Port Features */ 
+  /* Port Features */
   err = ind_ofdpa_port_features_set(port, of_port_desc);
   if (err != INDIGO_ERROR_NONE)
   {
-    LOG_INFO("Failed to get Port Features. (err = %d)\n", err);
+    LOG_ERROR("Failed to get Port Features. (err = %d)\n", err);
   }
 
   /* Port Current Speed in kbps */
   ofdpa_rv = ofdpaPortCurrSpeedGet(port, &speed);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    printf("Failed to get Port Current Speed. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port Current Speed. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
   of_port_desc_curr_speed_set(of_port_desc, speed);
 
@@ -318,7 +318,7 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
   ofdpa_rv = ofdpaPortMaxSpeedGet(port, &speed);
   if (ofdpa_rv != OFDPA_E_NONE)
   {
-    printf("Failed to get Port Max Speed. (ofdpa_rv = %d)\n", ofdpa_rv);
+    LOG_ERROR("Failed to get Port Max Speed. (ofdpa_rv = %d)\n", ofdpa_rv);
   }
   of_port_desc_max_speed_set(of_port_desc, speed);
 
@@ -327,65 +327,22 @@ static indigo_error_t ind_ofdpa_port_desc_set(of_port_no_t port, of_port_desc_t 
 
 indigo_error_t indigo_port_features_get(of_features_reply_t *features)
 {
-  indigo_error_t      err             = INDIGO_ERROR_NONE;
-  of_list_port_desc_t *of_list_port_desc = 0;
-  of_port_desc_t      *of_port_desc      = 0;
-  uint32_t port = 0, nextPort = 0;
-  OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
-
+  uint32_t capabilities = 0;
 
   LOG_TRACE("%s() called\n",__FUNCTION__);
 
-  if (features->version < OF_VERSION_1_3) 
+  if (features->version < OF_VERSION_1_3)
   {
     return INDIGO_ERROR_VERSION;
   }
 
-  /* Allocates memory for of_port_desc */
-  of_port_desc = of_port_desc_new(features->version);
-  if (of_port_desc == NULL)
-  {
-    LOG_ERROR("of_port_desc_new() failed");
-    return INDIGO_ERROR_RESOURCE;
-  }
+  OF_CAPABILITIES_FLAG_FLOW_STATS_SET(capabilities, features->version);
+  OF_CAPABILITIES_FLAG_TABLE_STATS_SET(capabilities, features->version);
+  OF_CAPABILITIES_FLAG_PORT_STATS_SET(capabilities, features->version);
+  OF_CAPABILITIES_FLAG_QUEUE_STATS_SET(capabilities, features->version);
+  of_features_reply_capabilities_set(features, capabilities);
 
-  /* Allocates memory for of_list_port_desc */
-  of_list_port_desc = of_list_port_desc_new(features->version);
-  if (of_list_port_desc == NULL)
-  {
-    LOG_ERROR("of_list_port_desc_new() failed");
-
-    /* free of_list_port_desc */
-    of_port_desc_delete(of_port_desc);
-
-    return INDIGO_ERROR_RESOURCE;
-  } 
-
-  ofdpa_rv = ofdpaPortNextGet(port, &nextPort);
-  while(ofdpa_rv == OFDPA_E_NONE) 
-  {
-    err = ind_ofdpa_port_features_set(nextPort, of_port_desc);
-    if (err != INDIGO_ERROR_NONE)
-    {
-      LOG_ERROR("Failed to get OpenFlow port stats.");
-      break;
-    }
-    of_list_port_desc_append(of_list_port_desc, of_port_desc);
-    port = nextPort;
-    ofdpa_rv = ofdpaPortNextGet(port, &nextPort);
-  }
-
-  if (of_features_reply_ports_set(features, of_list_port_desc) < 0)
-  {
-    LOG_ERROR("of_features_reply_ports_set() failed");
-    err = INDIGO_ERROR_UNKNOWN;
-  }
-
-  /* free the allocated memory */
-  of_port_desc_delete(of_port_desc);
-  of_list_port_desc_delete(of_list_port_desc);
-
-  return err;
+  return INDIGO_ERROR_NONE;
 }
 
 
@@ -396,9 +353,9 @@ indigo_error_t indigo_port_desc_stats_get(of_port_desc_stats_reply_t *port_desc_
   of_port_desc_t *of_port_desc = 0;
   of_list_port_desc_t *of_list_port_desc = 0;
   uint32_t port= 0, nextPort = 0;
-      
+
   LOG_TRACE("%s() called.", __FUNCTION__);
-    
+
   if (port_desc_stats_reply->version < OF_VERSION_1_3)
   {
     return INDIGO_ERROR_VERSION;
@@ -413,7 +370,7 @@ indigo_error_t indigo_port_desc_stats_get(of_port_desc_stats_reply_t *port_desc_
   }
 
   /* Allocates memory for of_list_port_desc */
-  of_list_port_desc = of_list_port_desc_new(port_desc_stats_reply->version); 
+  of_list_port_desc = of_list_port_desc_new(port_desc_stats_reply->version);
   if (of_list_port_desc == NULL)
   {
     LOG_ERROR("of_list_port_desc_new() failed");
@@ -453,7 +410,7 @@ indigo_error_t indigo_port_desc_stats_get(of_port_desc_stats_reply_t *port_desc_
   of_port_desc_delete(of_port_desc);
   of_list_port_desc_delete(of_list_port_desc);
 
-  return err;  
+  return err;
 }
 
 indigo_error_t indigo_port_modify(of_port_mod_t *port_mod)
@@ -487,7 +444,7 @@ indigo_error_t indigo_port_modify(of_port_mod_t *port_mod)
   /* Set the port config state (admin state)*/
   of_port_mod_config_get(port_mod, &of_config);
   of_port_mod_mask_get(port_mod, &of_mask);
- 
+
   of_config &= of_mask;
 
   ofdpa_rv = ofdpaPortConfigSet(of_port_no, of_config);
@@ -501,11 +458,11 @@ indigo_error_t indigo_port_modify(of_port_mod_t *port_mod)
   of_port_mod_advertise_get(port_mod, &of_advertise);
   ofdpa_rv = ofdpaPortAdvertiseFeatureSet(of_port_no, of_advertise);
   if (ofdpa_rv != OFDPA_E_NONE)
-  {                     
+  {
     LOG_ERROR("Failed to set advertise features on port %d. (ofdpa_rv = %d)", of_port_no, ofdpa_rv);
     return (indigoConvertOfdpaRv(ofdpa_rv));
   }
-    
+
   return INDIGO_ERROR_NONE;
 }
 
@@ -519,19 +476,19 @@ indigo_error_t indigo_port_stats_get(of_port_stats_request_t *port_stats_request
   int dump_all = 0;
   uint32_t port = 0;
 
-
   LOG_TRACE("%s() called", __FUNCTION__);
 
   if (port_stats_request->version < OF_VERSION_1_3)
   {
+    LOG_ERROR("Unsupported OpenFlow version 0x%x.", port_stats_request->version);
     return INDIGO_ERROR_VERSION;
   }
 
-  /* Allocate memory for the port stats reply 
-     Note: Memory allocated is freed by the caller 
-     of indigo_port_stats_get()*/ 
+  /* Allocate memory for the port stats reply
+     Note: Memory allocated is freed by the caller
+     of indigo_port_stats_get()*/
   reply = of_port_stats_reply_new(port_stats_request->version);
-  if (port_stats_reply == NULL) 
+  if (reply == NULL)
   {
     LOG_ERROR("Error allocating memory for port stats reply.");
     return INDIGO_ERROR_RESOURCE;
@@ -543,7 +500,7 @@ indigo_error_t indigo_port_stats_get(of_port_stats_request_t *port_stats_request
   of_port_stats_reply_entries_bind(*port_stats_reply, &list);
 
   of_port_stats_request_port_no_get(port_stats_request, &req_of_port_num);
-  if (req_of_port_num == OF_PORT_DEST_NONE_BY_VERSION(port_stats_request->version)) 
+  if (req_of_port_num == OF_PORT_DEST_NONE_BY_VERSION(port_stats_request->version))
   {
     ofdpa_rv = ofdpaPortNextGet(0, &port);
     if (ofdpa_rv != OFDPA_E_NONE)
@@ -578,8 +535,8 @@ indigo_error_t indigo_port_stats_get(of_port_stats_request_t *port_stats_request
   }while((ofdpaPortNextGet(port, &port) == OFDPA_E_NONE));
 
   /* Free the reply message only on failure.
-     Reply message is freed by the caller on success */ 
-  if (err != INDIGO_ERROR_NONE) 
+     Reply message is freed by the caller on success */
+  if (err != INDIGO_ERROR_NONE)
   {
     of_port_stats_reply_delete(*port_stats_reply);
     *port_stats_reply = NULL;
@@ -607,18 +564,18 @@ indigo_error_t indigo_port_queue_config_get(of_queue_get_config_request_t *queue
 
   if (queue_config_request->version < OF_VERSION_1_3)
   {
-    LOG_INFO("Unsupported OpenFlow version 0x%x.", queue_config_request->version);
+    LOG_ERROR("Unsupported OpenFlow version 0x%x.", queue_config_request->version);
     return INDIGO_ERROR_VERSION;
   }
 
-  /* Allocate memory for reply. 
-   * NOTE: This memory is freed by the caller of 
+  /* Allocate memory for reply.
+   * NOTE: This memory is freed by the caller of
    *       indigo_port_queue_config_get()  */
   reply = of_queue_get_config_reply_new(queue_config_request->version);
-  if (reply == NULL) 
+  if (reply == NULL)
   {
     LOG_ERROR("Could not allocate queue config reply");
-    err = INDIGO_ERROR_RESOURCE;
+    return INDIGO_ERROR_RESOURCE;
   }
 
   *queue_config_reply = reply;
@@ -640,7 +597,7 @@ indigo_error_t indigo_port_queue_config_get(of_queue_get_config_request_t *queue
     of_queue_get_config_reply_delete(*queue_config_reply);
     return INDIGO_ERROR_RESOURCE;
   }
-   
+
   of_queue_get_config_reply_queues_bind(*queue_config_reply, of_list_packet_queue);
 
   /* Get the port from request */
@@ -695,8 +652,8 @@ indigo_error_t indigo_port_queue_config_get(of_queue_get_config_request_t *queue
     }while((ofdpaPortNextGet(port, &port) == OFDPA_E_NONE) && (err == INDIGO_ERROR_NONE));
   }
 
-  of_packet_queue_delete(of_packet_queue); 
-  of_list_packet_queue_delete(of_list_packet_queue);  
+  of_packet_queue_delete(of_packet_queue);
+  of_list_packet_queue_delete(of_list_packet_queue);
 
  /* Free the reply message only on failure.
     Reply message is freed by the caller on success */
@@ -715,21 +672,21 @@ indigo_error_t indigo_port_queue_stats_get(of_queue_stats_request_t *queue_stats
   indigo_error_t err = INDIGO_ERROR_NONE;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   of_queue_stats_reply_t *reply;
-  uint32_t req_of_port_queue_id; 
+  uint32_t req_of_port_queue_id;
   of_port_no_t req_of_port_num;
   uint32_t port, all_ports = 0;
-  
+
 
   LOG_TRACE("Port queue stats called");
 
   if (queue_stats_request->version < OF_VERSION_1_3)
   {
-    LOG_INFO("Unsupported OpenFlow version 0x%x.", queue_stats_request->version);
+    LOG_ERROR("Unsupported OpenFlow version 0x%x.", queue_stats_request->version);
     return INDIGO_ERROR_VERSION;
   }
 
-  /* Allocate memory for reply message 
-   * NOTE: This memory is freed by the caller of 
+  /* Allocate memory for reply message
+   * NOTE: This memory is freed by the caller of
    *       indigo_port_queue_stats_get()  */
   reply = of_queue_stats_reply_new(queue_stats_request->version);
   if (reply == NULL)
@@ -759,22 +716,22 @@ indigo_error_t indigo_port_queue_stats_get(of_queue_stats_request_t *queue_stats
       LOG_ERROR("Failed to get first port. (ofdpa_rv = %d)", ofdpa_rv);
       of_queue_stats_reply_delete(*queue_stats_reply);
       return (indigoConvertOfdpaRv(ofdpa_rv));
-    } 
+    }
     all_ports = 1;
-  } 
+  }
   else
   {
     port = req_of_port_num;
-  } 
-  
+  }
+
 
   do
   {
-    err = ind_ofdpa_queue_stats_set(port, req_of_port_queue_id, list); 
+    err = ind_ofdpa_queue_stats_set(port, req_of_port_queue_id, list);
     if (err != INDIGO_ERROR_NONE)
     {
       LOG_ERROR("Failed to get port queue stats. (err = %d)", err);
-      break; 
+      break;
     }
 
     if (!all_ports)
@@ -791,8 +748,8 @@ indigo_error_t indigo_port_queue_stats_get(of_queue_stats_request_t *queue_stats
     of_queue_stats_reply_delete(*queue_stats_reply);
     *queue_stats_reply = NULL;
   }
- 
-  return err; 
+
+  return err;
 }
 
 
@@ -800,38 +757,38 @@ indigo_error_t indigo_port_interface_add(indigo_port_name_t port_name,
                                          of_port_no_t of_port,
                                          indigo_port_config_t *config)
 {
-  LOG_INFO("indigo_port_interface_add() unsupported.");
+  LOG_ERROR("indigo_port_interface_add() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
 indigo_error_t indigo_port_interface_modified(indigo_port_name_t port_name)
 {
-  LOG_INFO("indigo_port_interface_modified() unsupported.");
+  LOG_ERROR("indigo_port_interface_modified() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
 indigo_error_t indigo_port_interface_remove(indigo_port_name_t port_name)
 {
-  LOG_INFO("indigo_port_interface_remove() unsupported.");
+  LOG_ERROR("indigo_port_interface_remove() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
 indigo_error_t indigo_port_interface_list(indigo_port_info_t** list)
 {
-  LOG_INFO("indigo_port_interface_list() unsupported.");
+  LOG_ERROR("indigo_port_interface_list() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
 void indigo_port_interface_list_destroy(indigo_port_info_t* list)
 {
-  LOG_INFO("indigo_port_interface_list_destroy() unsupported.");
+  LOG_ERROR("indigo_port_interface_list_destroy() unsupported.");
   return;
 }
 
 indigo_error_t indigo_port_experimenter(of_experimenter_t *experimenter,
                                         indigo_cxn_id_t cxn_id)
 {
-  LOG_INFO("indigo_port_experimenter() unsupported.");
+  LOG_ERROR("indigo_port_experimenter() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
@@ -840,7 +797,7 @@ indigo_error_t indigo_port_packet_emit(of_port_no_t egress_port,
                                        uint8_t *data,
                                        unsigned length)
 {
-  LOG_INFO("indigo_port_packet_emit() unsupported.");
+  LOG_ERROR("indigo_port_packet_emit() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
@@ -848,7 +805,7 @@ indigo_error_t indigo_port_packet_emit_all(of_port_no_t skip_egress_port,
                                            uint8_t *data,
                                            unsigned length)
 {
-  LOG_INFO("indigo_port_packet_emit_all() unsupported.");
+  LOG_ERROR("indigo_port_packet_emit_all() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
@@ -857,7 +814,7 @@ indigo_error_t indigo_port_packet_emit_group(uint32_t group_id,
                                              uint8_t *data,
                                              unsigned len)
 {
-  LOG_INFO("indigo_port_packet_emit_group() unsupported.");
+  LOG_ERROR("indigo_port_packet_emit_group() unsupported.");
   return INDIGO_ERROR_NOT_SUPPORTED;
 }
 
@@ -874,11 +831,11 @@ ind_ofdpa_port_event_receive(void)
   memset(&portEventData, 0, sizeof(portEventData));
   while (ofdpaPortEventNextGet(&portEventData) == OFDPA_E_NONE)
   {
-    LOG_INFO("client_event: retrieved port event: port no = %d, eventMask = 0x%x, state = %d\n",
-           portEventData.portNum, portEventData.eventMask, portEventData.state);
+    LOG_TRACE("client_event: retrieved port event: port no = %d, eventMask = 0x%x, state = %d\n",
+              portEventData.portNum, portEventData.eventMask, portEventData.state);
 
     of_port_desc = of_port_desc_new(ofagent_of_version);
-    if (of_port_desc == 0) 
+    if (of_port_desc == 0)
     {
       LOG_ERROR("of_port_desc_new() failed");
       break;
@@ -891,7 +848,7 @@ ind_ofdpa_port_event_receive(void)
     }
 
     of_port_status = of_port_status_new(ofagent_of_version);
-    if (of_port_status == 0) 
+    if (of_port_status == 0)
     {
       LOG_ERROR("of_port_status_new() failed");
       break;
@@ -920,9 +877,10 @@ ind_ofdpa_port_event_receive(void)
     of_port_status = 0;     /* No longer owned */
   }
 
-   if (of_port_desc)    of_port_desc_delete(of_port_desc);
-   if (of_port_status)  of_port_status_delete(of_port_status);
+  if (of_port_desc)
+  {
+    of_port_desc_delete(of_port_desc);
+  }
+
   return;
 }
-
-

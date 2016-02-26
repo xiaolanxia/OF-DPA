@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -64,7 +64,7 @@ extern indigo_error_t indigo_port_features_get(
 
 /**
  * @brief Handle a port_desc_stats get request
- * @param port_desc_stats_reply The port_desc_stats_reply reply message 
+ * @param port_desc_stats_reply The port_desc_stats_reply reply message
  * to be filled out
  *
  * Ownership of the port_desc_stats_reply object is maintained by the caller
@@ -172,6 +172,21 @@ extern indigo_error_t indigo_port_modify(of_port_mod_t *port_mod);
 extern indigo_error_t indigo_port_stats_get(
     of_port_stats_request_t *port_stats_request,
     of_port_stats_reply_t **port_stats_reply);
+
+/**
+ * @brief Process an extended port stats request
+ * @param port_no The OpenFlow port number
+ * @param [out] port_stats Statistics for the port
+ *
+ * Only supported counters need to be set. The rest will default to -1.
+ *
+ * If the port number is invalid or no stats are available, don't set any
+ * of the counters.
+ */
+
+void indigo_port_extended_stats_get(
+    of_port_no_t port_no,
+    indigo_fi_port_stats_t *port_stats);
 
 /**
  * @brief Process an OF queue config request

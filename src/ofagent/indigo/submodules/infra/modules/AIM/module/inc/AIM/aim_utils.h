@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -32,6 +32,8 @@
 #define __AIM_UTILS_H__
 
 #include <AIM/aim_config.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /**
  * Number of elements in an array.
@@ -52,7 +54,7 @@
 
 
 /**
- * Clear a structure. 
+ * Clear a structure.
  */
 #define AIM_ZERO(_struct) memset(&_struct, 0, sizeof(_struct))
 
@@ -173,35 +175,6 @@ extern int aim_modules_init(void);
  */
 #define AIM_STRING_EMPTY_IF_NULL(_str) ( (_str) ? (_str) : "")
 
-/**
- * @brief Zero'ed memory alloc.
- * @param size Size.
- */
-void* aim_zmalloc(int size);
-
-/**
- * Free memory allocated by aim_zmalloc()
- * @param data The memory to free.
- */
-void aim_free(void* data);
-
-
-/**
- * @brief Duplicate memory.
- * @param src Source memory.
- * @param size Size.
- * @returns a new copy of the data.
- */
-void* aim_memdup(void* src, int size);
-
-/**
- * @brief Duplicate memory.
- * @param src Source memory;
- * @param src_size Size to copy.
- * @param alloc_size Size to allocate.
- */
-void* aim_memndup(void* src, int src_size, int alloc_size);
-
 
 /**
  * Expression log and assert.
@@ -227,6 +200,22 @@ void* aim_memndup(void* src, int src_size, int alloc_size);
         }                                                               \
     } while(0)
 
+/**
+ * Expression true log and assert.
+ *
+ * Only enabled on debug builds.
+ */
+#ifndef NDEBUG
+#define AIM_ASSERT(_expr, ...)                                             \
+    do {                                                                   \
+        if (!(_expr)) {                                                    \
+            AIM_DIE("debug assertion failed: '" #_expr "': " __VA_ARGS__); \
+        }                                                                  \
+    } while(0)
+#else
+#define AIM_ASSERT(_expr, ...)
+#endif
+
 
 /**
  * Min/Max
@@ -236,6 +225,61 @@ static inline int aim_imax(int a, int b) {
 }
 static inline int aim_imin(int a, int b) {
     return a > b ? b : a;
+}
+
+/**
+ * Check whether an integer is a power of 2
+ */
+static inline bool
+aim_is_pow2_u32(uint32_t x)
+{
+    return x > 0 && (x & (x - 1)) == 0;
+}
+
+/**
+ * Return the truncated log(2) of x
+ *
+ * If x is not a power of 2 then the result will be rounded down.
+ *
+ * x == 0 will return 0.
+ *
+ * Fallback taken from http://graphics.stanford.edu/~seander/bithacks.html
+ */
+static inline unsigned int
+aim_log2_u32(uint32_t x)
+{
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+    return x ? (31 - __builtin_clz(x)) : 0;
+#else
+    unsigned int r = 0;
+
+    if (x & 0xFFFF0000) {
+        x >>= 16;
+        r |= 16;
+    }
+
+    if (x & 0xFF00) {
+        x >>= 8;
+        r |= 8;
+    }
+
+    if (x & 0xF0) {
+        x >>= 4;
+        r |= 4;
+    }
+
+    if (x & 0xC) {
+        x >>= 2;
+        r |= 2;
+    }
+
+    if (x & 0x2) {
+        x >>= 1;
+        r |= 1;
+    }
+
+    return r;
+#endif
 }
 
 #endif /* __AIM_UTILS_H__ */

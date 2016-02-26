@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -76,9 +76,6 @@
         }                                                               \
     } while (0)
 
-#define IND_CORE_MSG_SEND(cxn_id, obj) \
-    indigo_cxn_send_controller_message(cxn_id, (of_object_t *)obj)
-
 /**
  * Local state manager configuration data
  * @li init_done Have values been initialized
@@ -120,6 +117,11 @@ calc_duration(indigo_time_t current_time, indigo_time_t entry_time,
 }
 
 extern const struct ind_cfg_ops ind_core_cfg_ops;
+
+void ind_core_test_gentable_init(void);
+void ind_core_test_gentable_finish(void);
+
+of_object_t *ind_core_dup_tracking(of_object_t *obj, indigo_cxn_id_t cxn_id);
 
 #include <OFStateManager/ofstatemanager.h>
 

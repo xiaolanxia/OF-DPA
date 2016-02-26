@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -26,7 +26,7 @@
 #include <AIM/aim_config.h>
 #include <AIM/aim_pvs.h>
 #include <AIM/aim_printf.h>
-#include "aim_util.h"
+#include <AIM/aim_utils.h>
 #include <stdio.h>
 
 int
@@ -97,3 +97,8 @@ aim_pvs_isatty(aim_pvs_t* pvs)
     }
 }
 
+const char*
+aim_pvs_desc_get(aim_pvs_t* pvs)
+{
+    return (pvs) ? (pvs->description) : "NULL";
+}

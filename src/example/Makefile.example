@@ -1,3 +1,4 @@
+# -*- mode: makefile-gmake; -*-
 #*********************************************************************
 #
 # (C) Copyright Broadcom Corporation 2013-2014
@@ -57,7 +58,7 @@ all: $(targets)
 # The .o files are built by an implicit rule.
 #
 $(targets): % : %.o
-	$(CC) -o $@ -L$(OFDPA_ROOT)/bin/$(platform) -Wl,-Bstatic $^ -Wl,-Bdynamic -lc -lrpc_client
+	$(CC) $(CFLAGS) -o $@ -L$(OFDPA_ROOT)/bin/$(platform) -Wl,-Bstatic $^ -Wl,-Bdynamic -lc -lrpc_client
 
 .SECONDEXPANSION:
 

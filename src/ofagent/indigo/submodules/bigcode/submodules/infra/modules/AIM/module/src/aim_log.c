@@ -1,13 +1,13 @@
 /****************************************************************
  *
- *        Copyright 2013, Big Switch Networks, Inc. 
- * 
+ *        Copyright 2013, Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -164,6 +164,7 @@ aim_log_show(aim_log_t* lobj, aim_pvs_t* pvs)
     aim_map_si_t* map;
 
     aim_printf(pvs, "name: %s\n", lobj->name);
+    aim_printf(pvs, "dest: %s\n", aim_pvs_desc_get(lobj->pvs));
 
     count = 0;
     aim_printf(pvs, "enabled options: ");
@@ -532,7 +533,7 @@ aim_log_output__(aim_log_t* l, const char* fname, const char* file,
     aim_printf(msg, "\n");
     pmsg = aim_pvs_buffer_get(msg);
     aim_printf(l->pvs, "%s", pmsg);
-    AIM_FREE(pmsg);
+    aim_free(pmsg);
     aim_pvs_destroy(msg);
 }
 
