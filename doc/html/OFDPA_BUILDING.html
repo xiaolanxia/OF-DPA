@@ -47,7 +47,7 @@ Linux Build Procedure for OF-DPA Software</h1>
 <li>The build machine uses either Red Hat&reg; Linux&reg; 5 and 6.2, or CentOS 5 and 6.2 (64-bit only) as the development environment. CentOS 6.2 is recommended if you will also be using this build machine for building RPMs. </li>
 <li>The build machine uses Broadcom Linux or XLP&reg; SDK 2.2.7/3.2 as the cross-compiler and target environment.</li>
 </ul>
-<dl class="section note"><dt>Note</dt><dd>It should be possible to use other distributions for the development environment and other development kits for cross-compilation and target files. This file documents compiling for a Broadcom GTO (BCM98548XMC PowerPC 8548), WRX (BCM9XLP208XMC) CPU-based or iProc ARM&reg; (ARMv7) reference platform target.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>It should be possible to use other distributions for the development environment and other development kits for cross-compilation and target files. This file documents compiling for a iProc ARM&reg; (ARMv7) reference platform target.</dd></dl>
 <p>To successfully build OF-DPA software for a Linux environment, execute the following steps in the order specified.</p>
 <ol type="1">
 <li>Build or install the necessary toolchain (see <a class="el" href="OFDPA_BUILDING.html#OFDPA_INSTALLING_TOOLCHAIN">Installing the Broadcom Linux Toolchain</a>).</li>
@@ -58,8 +58,7 @@ Linux Build Procedure for OF-DPA Software</h1>
 </ol>
 <h1><a class="anchor" id="OFDPA_INSTALLING_TOOLCHAIN"></a>
 Installing the Broadcom Linux Toolchain</h1>
-<p>This section provides information about how to install the Broadcom Linux toolchains for OF-DPA 2.0. The following table contains information about the toolchains provided for the supported architectures and CPUs: </p>
-<dl class="section note"><dt>Note</dt><dd>For XLP architecture, use <a class="el" href="OFDPA_BUILDING.html#OFDPA_INSTALLING_XLP_TOOLCHAIN">Installing the XLP MIPS Toolchain</a> instead of this section.</dd></dl>
+<p>This section provides information about how to install the Broadcom Linux toolchains for OF-DPA 2.0. The following table contains information about the toolchains provided for the supported architectures and CPUs:</p>
 <table class="doxtable">
 <caption id="toolchains" align="bottom">Provided Toolchains</caption>
 <tr>
@@ -86,28 +85,6 @@ Installing the Broadcom Linux Toolchain</h1>
 </div><!-- fragment --></li>
 </ol>
 <dl class="section note"><dt>Note</dt><dd>The toolchains were built specifying Linux headers for version 3.8.13 (for e500v2) or version 3.6.5 (for BRL 3.6) which may not be compatible with building other projects.</dd></dl>
-<h2><a class="anchor" id="OFDPA_INSTALLING_XLP_TOOLCHAIN"></a>
-Installing the XLP MIPS Toolchain</h2>
-<p>A development environment for the BCM9XLP208XMC CPU card is needed to compile the FASTPATH code to run on the target. XLP SDK 3.2.1 was tested as the cross-compiler and target environment. </p>
-<table class="doxtable">
-<caption id="XLPtoolchains" align="bottom">XLP Toolchain Provided</caption>
-<tr>
-<th>Directory </th><th>Architecture </th><th>CPU  </th></tr>
-<tr>
-<td>wrx </td><td>MIPS64 </td><td>XLP208  </td></tr>
-</table>
-<p>To install the toolchains:</p>
-<ol type="1">
-<li>Log on to the Customer Support Portal (CSP) and acquire the SDK file sdk-base-3.2.1.tar.gz.</li>
-<li>Log in to the development system as root.</li>
-<li>Create a toolchain directory. <div class="fragment"><div class="line">[root@localhost]# mkdir -p /projects/nwsoft-toolchains/netlogic</div>
-</div><!-- fragment --></li>
-<li>Uncompress the SDK file. <div class="fragment"><div class="line">[root@localhost]# cd /projects/nwsoft-toolchains/netlogic</div>
-<div class="line">[root@localhost netlogic]# tar zxf /tmp/sdk-base-3.2.1.tar.gz</div>
-<div class="line">[root@localhost netlogic]# mv sdk-base sdk-3.2.1</div>
-<div class="line">[root@localhost netlogic]# cd sdk-3.2.1</div>
-</div><!-- fragment --></li>
-</ol>
 <h2><a class="anchor" id="OFDPA_EXTRACTING_SOURCE"></a>
 Extracting the Open Source Code</h2>
 <p>After building the toolchain, the operator must extract the open source code. A sample set of commands for extracting the open source code is as follows. </p>
@@ -136,22 +113,6 @@ Installing and Building the Linux Kernel</h2>
 <h2><a class="anchor" id="OFDPA_KERNEL_SAMPLE"></a>
 Linux Kernel Install/Build Sample Command Sequence</h2>
 <p>Refer to the following command sequence as a guide for installing and building the Linux kernel:</p>
-<dl class="section user"><dt>XGS BCM98548XMC Platform Example</dt><dd><div class="fragment"><div class="line">[builduser]$ cd OFDPA_R200_open_source_support_code/fp_fsl_1.4</div>
-<div class="line">[builduser]$ ARCH=powerpc CROSS_COMPILE=/projects/nwsoft-toolchains/brl/brl_3.8/e500v2/usr/bin/powerpc-linux- make 85xx/bcm98548xmc_defconfig</div>
-<div class="line">HOSTCC scripts/basic/fixdep</div>
-<div class="line">[ snip output ]</div>
-<div class="line">HOSTLD scripts/kconfig/conf</div>
-<div class="line"><span class="preprocessor">#</span></div>
-<div class="line"><span class="preprocessor"></span><span class="preprocessor"># configuration written to .config</span></div>
-<div class="line"><span class="preprocessor"></span><span class="preprocessor">#</span></div>
-<div class="line"><span class="preprocessor"></span>[builduser]$ ARCH=powerpc CROSS_COMPILE=/projects/nwsoft-toolchains/brl/brl_3.8/e500v2/usr/bin/powerpc-linux- make</div>
-<div class="line">scripts/kconfig/conf -s arch/powerpc/Kconfig</div>
-<div class="line">[ snip output ]</div>
-<div class="line">  LD [M]  ltt/probes/syscall-trace.ko</div>
-<div class="line">  CC      ltt/probes/trap-trace.mod.o</div>
-<div class="line">  LD [M]  ltt/probes/trap-trace.ko</div>
-<div class="line">[builduser]$</div>
-</div><!-- fragment --> </dd></dl>
 <dl class="section user"><dt>iProc ARM Example</dt><dd></dd></dl>
 <p>The iProc ARM kernel sources are bundled in the open source tarball and also within the OF-DPA source code directory structure. For iProc ARM, the kernel is automatically built as part of the OF-DPA image construction, so there is no need to do a separate build of the kernel. The following information documents the location of the iProc ARM sources within the tree.</p>
 <p>The kernel that gets built for iProc ARM BSP can be found in the OF-DPA tree at this location: </p>
@@ -202,7 +163,7 @@ Building OF-DPA Source Code</h2>
 <li>DEBIAN_DEPENDS - The list of package dependencies</li>
 </ul>
 <dl class="section user"><dt>Interprocess Mode Application</dt><dd></dd></dl>
-<p>Change to the platform subdirectory (e.g. output/gto-xgs5-fsl14 ) and type "make". This will generate the following binaries in the directory specified by DELIVERABLES_DIR. The default setting for DELIVERABLES_DIR is output/&lt;platform&gt;/build/ as defined in Make.common.</p>
+<p>Change to the platform subdirectory (e.g. bin/ly2-trident-fsl14 ) and type "make". This will generate the following binaries in the directory specified by DELIVERABLES_DIR. The default setting for DELIVERABLES_DIR is output/&lt;platform&gt;/build/ as defined in Make.common.</p>
 <ul>
 <li>ofdpa: the OF-DPA executable. Clients invoke APIs via Remote Procedure Calls (RPCs). The OF-DPA process is started using the command "./ofdpa &amp;" from the switch Linux prompt. </li>
 <li>ofdpa.dbg: the OF-DPA executable with debug symbols. This is used with the GDB debugger. </li>
